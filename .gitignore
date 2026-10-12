@@ -1,2 +1,59 @@
-.vs/
+
+# -------------------------
+# .NET build output
+# -------------------------
+bin/
 obj/
+
+# -------------------------
+# Visual Studio
+# -------------------------
+.vs/
+*.user
+*.suo
+*.rsuser
+*.userosscache
+*.sln.docstates
+
+# -------------------------
+# JetBrains Rider
+# -------------------------
+.idea/
+*.DotSettings.user
+
+# -------------------------
+# Test results and coverage
+# -------------------------
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# -------------------------
+# Local environment / secrets
+# -------------------------
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+appsettings.Local.json
+appsettings.*.local.json
+
+*.pfx
+*.p12
+*.key
+
+# -------------------------
+# Logs
+# -------------------------
+*.log
+logs/
+
+# -------------------------
+# Operating system
+# -------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
