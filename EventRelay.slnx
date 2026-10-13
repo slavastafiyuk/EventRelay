@@ -1,3 +1,18 @@
 <Solution>
-  <Project Path="EventRelay.csproj" />
+  <Folder Name="/Itens de Solução/">
+    <File Path=".dockerignore" />
+    <File Path=".env" />
+    <File Path=".env.example" />
+    <File Path=".gitignore" />
+    <File Path="docker-compose.yml" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/EventRelay.DeliveryService/EventRelay.DeliveryService.csproj" />
+    <Project Path="src/EventRelay.EventService/EventRelay.EventService.csproj" />
+    <Project Path="src/EventRelay.Gateway/EventRelay.Gateway.csproj" />
+    <Project Path="src/EventRelay.ProjectService/EventRelay.ProjectService.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EventRelay.ProjectService.Tests/EventRelay.ProjectService.Tests.csproj" />
+  </Folder>
 </Solution>
