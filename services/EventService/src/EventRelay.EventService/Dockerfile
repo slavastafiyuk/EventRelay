@@ -1,10 +1,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
+
 COPY . .
 
 RUN dotnet publish \
-    src/EventRelay.ProjectService/EventRelay.ProjectService.csproj \
+    services/EventService/src/EventRelay.EventService/EventRelay.EventService.csproj \
     -c Release \
     -o /out \
     /p:UseAppHost=false
@@ -17,4 +18,4 @@ COPY --from=build /out .
 
 USER $APP_UID
 
-ENTRYPOINT ["dotnet", "EventRelay.ProjectService.dll"]
+ENTRYPOINT ["dotnet", "EventRelay.EventService.dll"]

@@ -1,10 +1,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
+
 COPY . .
 
 RUN dotnet publish \
-    src/EventRelay.Gateway/EventRelay.Gateway.csproj \
+    gateway/EventRelay.Gateway/EventRelay.Gateway.csproj \
     -c Release \
     -o /out \
     /p:UseAppHost=false

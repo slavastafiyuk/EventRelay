@@ -18,26 +18,26 @@ services:
   project-service:
     build:
       context: .
-      dockerfile: src/EventRelay.ProjectService/Dockerfile
+      dockerfile: services/ProjectService/src/EventRelay.ProjectService.Api/Dockerfile
     ports:
       - "127.0.0.1:5101:8080"
 
   event-service:
     build:
       context: .
-      dockerfile: src/EventRelay.EventService/Dockerfile
+      dockerfile: services/EventService/src/EventRelay.EventService/Dockerfile
     ports:
       - "127.0.0.1:5102:8080"
 
   delivery-service:
     build:
       context: .
-      dockerfile: src/EventRelay.DeliveryService/Dockerfile
+      dockerfile: services/DeliveryService/src/EventRelay.DeliveryService/Dockerfile
 
   gateway:
     build:
       context: .
-      dockerfile: src/EventRelay.Gateway/Dockerfile
+      dockerfile: gateway/EventRelay.Gateway/Dockerfile
     ports:
       - "127.0.0.1:5000:8080"
     environment:
