@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -20,7 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\EventRelay.ProjectService\EventRelay.ProjectService.csproj" />
+    <ProjectReference Include="..\..\src\EventRelay.ProjectService.Api\EventRelay.ProjectService.Api.csproj" />
+    <ProjectReference Include="..\..\src\EventRelay.ProjectService.Application\EventRelay.ProjectService.Application.csproj" />
+    <ProjectReference Include="..\..\src\EventRelay.ProjectService.Presentation\EventRelay.ProjectService.Presentation.csproj" />
   </ItemGroup>
 
 </Project>
