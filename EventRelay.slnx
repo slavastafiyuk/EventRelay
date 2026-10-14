@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".dockerignore" />
+    <File Path=".editorconfig" />
     <File Path=".env.example" />
     <File Path=".gitignore" />
     <File Path="docker-compose.yml" />
@@ -12,20 +13,23 @@
 
   <Folder Name="/Services/ProjectService/">
     <Project Path="services/ProjectService/src/EventRelay.ProjectService.Api/EventRelay.ProjectService.Api.csproj" />
-    <Project Path="services/ProjectService/src/EventRelay.ProjectService.Presentation/EventRelay.ProjectService.Presentation.csproj" />
     <Project Path="services/ProjectService/src/EventRelay.ProjectService.Application/EventRelay.ProjectService.Application.csproj" />
     <Project Path="services/ProjectService/src/EventRelay.ProjectService.Domain/EventRelay.ProjectService.Domain.csproj" />
-    <Project Path="services/ProjectService/src/EventRelay.ProjectService.Repository/EventRelay.ProjectService.Repository.csproj" />
     <Project Path="services/ProjectService/src/EventRelay.ProjectService.Infrastructure/EventRelay.ProjectService.Infrastructure.csproj" />
+    <Project Path="services/ProjectService/src/EventRelay.ProjectService.Presentation/EventRelay.ProjectService.Presentation.csproj" />
+    <Project Path="services/ProjectService/src/EventRelay.ProjectService.Repository/EventRelay.ProjectService.Repository.csproj" />
   </Folder>
 
   <Folder Name="/Services/EventService/">
     <Project Path="services/EventService/src/EventRelay.EventService/EventRelay.EventService.csproj" />
   </Folder>
+  <Folder Name="/Itens de Solução/" />
+  <Folder Name="/Services/" />
 
   <Folder Name="/Services/DeliveryService/">
     <Project Path="services/DeliveryService/src/EventRelay.DeliveryService/EventRelay.DeliveryService.csproj" />
   </Folder>
+  <Folder Name="/Tests/" />
 
   <Folder Name="/Tests/ProjectService/">
     <Project Path="services/ProjectService/tests/EventRelay.ProjectService.Tests/EventRelay.ProjectService.Tests.csproj" />
