@@ -1,5 +1,7 @@
 using EventRelay.ProjectService.Domain.Interfaces;
 
+namespace EventRelay.ProjectService.Domain.Entities;
+
 public abstract class KeyBase<TSelf, TSecondary>
     : IKeyBase,
       ISecondaryKey<TSecondary>,
