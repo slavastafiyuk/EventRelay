@@ -2,7 +2,13 @@ namespace EventRelay.ProjectService.Domain.Entities.Project;
 
 public class ProjectKey : KeyBase<ProjectKey, string>
 {
-    public string Name { get; private set; } = null!;
+    public string Name
+    {
+        get;
+        set => field = string.IsNullOrWhiteSpace(value)
+            ? throw new ArgumentException("Invalid project name.")
+            : value.Trim();
+    } = null!;
 
     public override string SecondaryKey => Name;
 
@@ -10,10 +16,6 @@ public class ProjectKey : KeyBase<ProjectKey, string>
 
     public ProjectKey(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException(
-                "Name cannot be null or whitespace.", nameof(name));
-
-        Name = name.Trim();
+        Name = name;
     }
 }
