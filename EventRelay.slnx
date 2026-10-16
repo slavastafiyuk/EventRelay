@@ -23,7 +23,9 @@
   <Folder Name="/Services/EventService/">
     <Project Path="services/EventService/src/EventRelay.EventService/EventRelay.EventService.csproj" />
   </Folder>
-  <Folder Name="/Itens de Solução/" />
+  <Folder Name="/Itens de Solução/">
+    <File Path=".env" />
+  </Folder>
   <Folder Name="/Services/" />
 
   <Folder Name="/Services/DeliveryService/">

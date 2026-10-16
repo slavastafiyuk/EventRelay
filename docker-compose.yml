@@ -1,3 +1,4 @@
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -21,6 +22,11 @@ services:
       dockerfile: services/ProjectService/src/EventRelay.ProjectService.Api/Dockerfile
     ports:
       - "127.0.0.1:5101:8080"
+    environment:
+      ConnectionStrings__ProjectDatabase: "Host=postgres;Port=5432;Database=eventrelay_projects;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   event-service:
     build:
