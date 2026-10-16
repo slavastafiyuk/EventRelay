@@ -7,7 +7,8 @@ using EventRelay.ProjectService.Repository;
 var builder = WebApplication.CreateBuilder(args);
 
 // Dependency Injection
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(
+    builder.Configuration);
 builder.Services.AddRepositories();
 builder.Services.AddApplication();
 builder.Services.AddPresentation();

@@ -14,8 +14,7 @@ public class ProjectKey : KeyBase<ProjectKey, string>
 
     private ProjectKey() { }
 
-    public ProjectKey(string name)
-    {
-        Name = name;
-    }
+    public ProjectKey(string name) => Name = name;
+
+    public ProjectKey(Guid id, string name) : base(id) => Name = name;
 }
