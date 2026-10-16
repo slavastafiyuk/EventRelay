@@ -2,6 +2,7 @@ using EventRelay.ProjectService.Application.Abstractions;
 using EventRelay.ProjectService.Domain.Entities.Project;
 using EventRelay.ProjectService.Infrastructure.Persistence;
 using EventRelay.ProjectService.Infrastructure.Persistence.Models;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventRelay.ProjectService.Repository.Repositories;
@@ -12,15 +13,8 @@ public sealed class ProjectRepository(ProjectDbContext dbContext) : IProjectRepo
         Project project,
         CancellationToken cancellationToken)
     {
-        var record = new ProjectRecord
-        {
-            Id = project.Key.Id,
-            Name = project.Key.Name,
-            Description = project.Description
-        };
-
         await dbContext.Projects.AddAsync(
-            record,
+            project.Adapt<ProjectRecord>(),
             cancellationToken);
     }
 
@@ -34,15 +28,6 @@ public sealed class ProjectRepository(ProjectDbContext dbContext) : IProjectRepo
                 x => x.Id == id,
                 cancellationToken);
 
-        if (record is null)
-            return null;
-
-        return new Project(
-            new ProjectKey(
-                record.Id,
-                record.Name))
-        {
-            Description = record.Description
-        };
+        return record?.Adapt<Project>();
     }
 }

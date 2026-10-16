@@ -1,6 +1,7 @@
 using EventRelay.ProjectService.Application.Abstractions;
 using EventRelay.ProjectService.Presentation.Abstractions;
 using EventRelay.ProjectService.Presentation.Contracts;
+using Mapster;
 
 namespace EventRelay.ProjectService.Presentation.Handlers;
 
@@ -12,8 +13,6 @@ public sealed class ProjectPingHandler(
     {
         var status = projectStatusService.GetStatus();
 
-        return new ProjectPingResponse(
-            Service: status.Service,
-            Status: status.Status);
+        return status.Adapt<ProjectPingResponse>();
     }
 }
