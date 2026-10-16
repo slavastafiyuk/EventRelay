@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 
 namespace EventRelay.ProjectService.Tests;
 
@@ -12,7 +13,20 @@ public sealed class ProjectServiceTests
     public ProjectServiceTests(
         WebApplicationFactory<Program> factory)
     {
-        _client = factory.CreateClient();
+        var configuredFactory = factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(
+                    new Dictionary<string, string?>
+                    {
+                        ["ConnectionStrings:ProjectDatabase"] =
+                            "Host=localhost;Database=unused;Username=test;Password=test"
+                    });
+            });
+        });
+
+        _client = configuredFactory.CreateClient();
     }
 
     [Fact]

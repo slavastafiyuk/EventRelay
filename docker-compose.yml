@@ -35,11 +35,21 @@ services:
       dockerfile: services/EventService/src/EventRelay.EventService/Dockerfile
     ports:
       - "127.0.0.1:5102:8080"
+    environment:
+      ConnectionStrings__EventDatabase: "Host=postgres;Port=5432;Database=eventrelay_events;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   delivery-service:
     build:
       context: .
       dockerfile: services/DeliveryService/src/EventRelay.DeliveryService/Dockerfile
+    environment:
+      ConnectionStrings__DeliveryDatabase: "Host=postgres;Port=5432;Database=eventrelay_deliveries;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   gateway:
     build:
