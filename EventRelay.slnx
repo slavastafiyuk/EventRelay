@@ -23,13 +23,15 @@
   <Folder Name="/Services/EventService/">
     <Project Path="services/EventService/src/EventRelay.EventService/EventRelay.EventService.csproj" />
   </Folder>
-  <Folder Name="/Itens de Solução/">
-    <File Path=".env" />
-  </Folder>
   <Folder Name="/Services/" />
 
   <Folder Name="/Services/DeliveryService/">
     <Project Path="services/DeliveryService/src/EventRelay.DeliveryService/EventRelay.DeliveryService.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/infra/" />
+  <Folder Name="/Solution Items/infra/local/" />
+  <Folder Name="/Solution Items/infra/local/postgres/">
+    <File Path="01-create-databases.sql" />
   </Folder>
   <Folder Name="/Tests/" />
 
