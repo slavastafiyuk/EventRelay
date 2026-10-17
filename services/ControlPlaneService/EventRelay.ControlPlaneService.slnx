@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EventRelay.ControlPlaneService.Api/EventRelay.ControlPlaneService.Api.csproj" />
+    <Project Path="src/EventRelay.ControlPlaneService.Application/EventRelay.ControlPlaneService.Application.csproj" />
+    <Project Path="src/EventRelay.ControlPlaneService.Domain/EventRelay.ControlPlaneService.Domain.csproj" />
+    <Project Path="src/EventRelay.ControlPlaneService.Infrastructure/EventRelay.ControlPlaneService.Infrastructure.csproj" />
+    <Project Path="src/EventRelay.ControlPlaneService.Presentation/EventRelay.ControlPlaneService.Presentation.csproj" />
+    <Project Path="src/EventRelay.ControlPlaneService.Repository/EventRelay.ControlPlaneService.Repository.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EventRelay.ControlPlaneService.Tests/EventRelay.ControlPlaneService.Tests.csproj" />
+  </Folder>
+</Solution>
