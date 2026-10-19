@@ -8,6 +8,9 @@
   </Folder>
   <Folder Name="/Solution Items/infra/" />
   <Folder Name="/Solution Items/infra/local/" />
+  <Folder Name="/Solution Items/infra/local/migrations/">
+    <File Path="ControlPlane.Dockerfile" />
+  </Folder>
   <Folder Name="/Solution Items/infra/local/postgres/">
     <File Path="01-create-databases.sql" />
   </Folder>

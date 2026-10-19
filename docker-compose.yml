@@ -12,10 +12,22 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./01-create-databases.sql:/docker-entrypoint-initdb.d/01-create-databases.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U eventrelay -d postgres"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U eventrelay -d postgres"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 20
+      start_period: 10s
+  control-plane-migrations:
+    build:
+      context: .
+      dockerfile: ./ControlPlane.Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ProjectDatabase: "Host=postgres;Port=5432;Database=eventrelay_projects;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   control-plane-service:
     build:
@@ -26,8 +38,8 @@ services:
     environment:
       ConnectionStrings__ProjectDatabase: "Host=postgres;Port=5432;Database=eventrelay_projects;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
     depends_on:
-      postgres:
-        condition: service_healthy
+      control-plane-migrations:
+        condition: service_completed_successfully
 
   event-service:
     build:
