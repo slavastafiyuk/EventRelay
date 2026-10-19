@@ -1,16 +1,20 @@
 using System.Net;
 using System.Net.Http.Json;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
 using EventRelay.ControlPlaneService.Tests.Helpers;
+using Microsoft.EntityFrameworkCore;
 
 namespace EventRelay.ControlPlaneService.Tests.Integration.ProjectTests;
 
 public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContainer>
 {
     private readonly HttpClient _client;
+    private readonly CreatePostgresContainer _container;
 
     public ProjectControllerTests(CreatePostgresContainer container)
     {
+        _container = container;
         _client = container.Client;
     }
 
@@ -94,6 +98,59 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
 
         using var response =
             await _client.PostAsJsonAsync("/api/projects", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+
+    [Fact]
+    public async Task Create_ProjectIsStoredInPostgres()
+    {
+        var name = $"Persisted-{Guid.NewGuid():N}";
+
+        var request = new ProjectCreateDTO
+        {
+            Name = name,
+            Description = "PostgreSQL integration test"
+        };
+
+        using var response = await _client.PostAsJsonAsync(
+            "/api/projects",
+            request);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var created =
+            await response.Content.ReadFromJsonAsync<ProjectKeyDTO>();
+
+        Assert.NotNull(created);
+
+        var options = new DbContextOptionsBuilder<ProjectDbContext>()
+            .UseNpgsql(_container.ConnectionString)
+            .Options;
+
+        await using var db = new ProjectDbContext(options);
+
+        var persisted = await db.Projects
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == created.Id);
+
+        Assert.Equal(name, persisted.Name);
+        Assert.Equal(request.Description, persisted.Description);
+    }
+
+
+    [Fact]
+    public async Task Create_WhitespaceName_ReturnsBadRequest()
+    {
+        var request = new ProjectCreateDTO
+        {
+            Name = "   "
+        };
+
+        using var response = await _client.PostAsJsonAsync(
+            "/api/projects",
+            request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
