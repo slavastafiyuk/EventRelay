@@ -1,4 +1,4 @@
-using EventRelay.ControlPlaneService.Application.Abstractions;
+using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models;

@@ -1,4 +1,4 @@
-using EventRelay.ControlPlaneService.Application.Abstractions;
+using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 using EventRelay.ControlPlaneService.Repository.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 

@@ -12,7 +12,7 @@ public sealed class ProjectPingHandlerTests
         // Arrange
         var service = new FakeProjectStatusService();
 
-        var handler = new ProjectPingHandler(service);
+        var handler = new PingHandler(service);
 
         // Act
         var response = handler.Handle();
@@ -23,7 +23,7 @@ public sealed class ProjectPingHandlerTests
     }
 
     private sealed class FakeProjectStatusService
-        : IProjectStatusService
+        : IStatusService
     {
         public ProjectStatus GetStatus()
         {

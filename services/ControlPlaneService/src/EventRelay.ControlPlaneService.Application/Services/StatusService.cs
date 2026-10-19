@@ -3,7 +3,7 @@ using EventRelay.ControlPlaneService.Application.Models;
 
 namespace EventRelay.ControlPlaneService.Application.Services;
 
-public sealed class ProjectStatusService : IProjectStatusService
+public sealed class StatusService : IStatusService
 {
     public ProjectStatus GetStatus()
     {

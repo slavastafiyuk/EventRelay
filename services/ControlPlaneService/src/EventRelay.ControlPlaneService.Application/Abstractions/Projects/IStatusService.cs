@@ -2,7 +2,7 @@ using EventRelay.ControlPlaneService.Application.Models;
 
 namespace EventRelay.ControlPlaneService.Application.Abstractions;
 
-public interface IProjectStatusService
+public interface IStatusService
 {
     ProjectStatus GetStatus();
 }
