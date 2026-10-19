@@ -1,44 +1,26 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
+using EventRelay.ControlPlaneService.Tests.Helpers;
 
 namespace EventRelay.ControlPlaneService.Tests;
 
-public sealed class ControlPlaneServiceTests
-    : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ControlPlaneServiceTests : IDisposable
 {
+    private readonly ApiFactory _factory;
     private readonly HttpClient _client;
 
-    public ControlPlaneServiceTests(
-        WebApplicationFactory<Program> factory)
+    public ControlPlaneServiceTests()
     {
-        var configuredFactory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureAppConfiguration((_, configuration) =>
-            {
-                configuration.AddInMemoryCollection(
-                    new Dictionary<string, string?>
-                    {
-                        ["ConnectionStrings:ProjectDatabase"] =
-                            "Host=localhost;Database=unused;Username=test;Password=test"
-                    });
-            });
-        });
-
-        _client = configuredFactory.CreateClient();
+        _factory = new ApiFactory("Host=localhost;Database=unused;Username=test;Password=test");
+        _client = _factory.CreateClient();
     }
 
     [Fact]
     public async Task Ping_ReturnsExpectedResponse()
     {
-        // Arrange
         const string url = "/api/projects/ping";
-
-        // Act
         using var response = await _client.GetAsync(url);
 
-        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var json = await response.Content.ReadAsStringAsync();
@@ -59,13 +41,15 @@ public sealed class ControlPlaneServiceTests
     [Fact]
     public async Task Health_ReturnsOk()
     {
-        // Arrange
         const string url = "/health";
-
-        // Act
         using var response = await _client.GetAsync(url);
 
-        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
+        _factory.Dispose();
     }
 }

@@ -22,10 +22,18 @@ public sealed class ProjectPersistenceTests
                 .UseNpgsql(postgres.GetConnectionString())
                 .Options;
 
+
         await using (var db = new ProjectDbContext(options))
         {
             await db.Database.MigrateAsync();
+
+            var applied = await db.Database.GetAppliedMigrationsAsync();
+            Assert.NotEmpty(applied);
+
+            var pending = await db.Database.GetPendingMigrationsAsync();
+            Assert.Empty(pending);
         }
+
 
         var original = new Project(
             new ProjectKey("MyStore"))
