@@ -2,25 +2,24 @@ using EventRelay.ControlPlaneService.Application;
 using EventRelay.ControlPlaneService.Infrastructure;
 using EventRelay.ControlPlaneService.Presentation;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
-using EventRelay.ControlPlaneService.Presentation.Mappings;
 using EventRelay.ControlPlaneService.Repository;
-using EventRelay.ControlPlaneService.Repository.Mappings;
 using Mapster;
 
 var config = TypeAdapterConfig.GlobalSettings;
 
 config.Scan(
-    typeof(ProjectPersistenceMapping).Assembly,
-    typeof(ProjectApiMapping).Assembly);
+    typeof(EventRelay.ControlPlaneService.Repository.Mappings.Mapping).Assembly,
+    typeof(EventRelay.ControlPlaneService.Presentation.Mappings.Mapping).Assembly);
 
 config.RequireExplicitMapping = true;
 config.Compile();
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
+
 // Dependency Injection
-builder.Services.AddInfrastructure(
-    builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddRepositories();
 builder.Services.AddApplication();
 builder.Services.AddPresentation();
@@ -32,9 +31,11 @@ var app = builder.Build();
 
 app.MapHealthChecks("/health");
 
+app.MapControllers();
+
 app.MapGet(
     "/api/projects/ping",
-    (IProjectPingHandler handler) =>
+    (IPingHandler handler) =>
     {
         var response = handler.Handle();
 

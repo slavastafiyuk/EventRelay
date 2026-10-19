@@ -1,6 +1,6 @@
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 
-namespace EventRelay.ControlPlaneService.Application.Abstractions;
+namespace EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 
 public interface IProjectRepository
 {

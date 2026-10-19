@@ -4,7 +4,7 @@ using Mapster;
 
 namespace EventRelay.ControlPlaneService.Repository.Mappings;
 
-public sealed class ProjectPersistenceMapping : IRegister
+public sealed class Mapping : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
