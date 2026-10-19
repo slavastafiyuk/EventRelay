@@ -6,7 +6,7 @@ It is being developed incrementally to explore microservices, reliable message d
 
 Architecture
 
-The current Phase 1 implementation contains four independently running applications:
+The current implementation contains four independently running applications:
 
 * Gateway: ASP.NET Core with YARP for routing incoming API requests.
 * ControlPlaneService: Project management API with PostgreSQL persistence.
