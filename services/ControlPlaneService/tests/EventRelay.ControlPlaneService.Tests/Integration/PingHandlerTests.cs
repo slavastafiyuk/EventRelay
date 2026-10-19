@@ -2,9 +2,9 @@ using EventRelay.ControlPlaneService.Application.Abstractions;
 using EventRelay.ControlPlaneService.Application.Models;
 using EventRelay.ControlPlaneService.Presentation.Handlers;
 
-namespace EventRelay.ControlPlaneService.Tests;
+namespace EventRelay.ControlPlaneService.Tests.Integration;
 
-public sealed class ProjectPingHandlerTests
+public sealed class PingHandlerTests
 {
     [Fact]
     public void Handle_MapsApplicationResultToResponse()
