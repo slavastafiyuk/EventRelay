@@ -4,7 +4,7 @@ using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
-namespace EventRelay.ControlPlaneService.Tests.Integration;
+namespace EventRelay.ControlPlaneService.Tests.Integration.ProjectTests;
 
 public sealed class ProjectPersistenceTests
 {
