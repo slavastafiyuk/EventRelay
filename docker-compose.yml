@@ -36,6 +36,7 @@ services:
     ports:
       - "127.0.0.1:5101:8080"
     environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ConnectionStrings__ProjectDatabase: "Host=postgres;Port=5432;Database=eventrelay_projects;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
     depends_on:
       control-plane-migrations:
@@ -48,6 +49,7 @@ services:
     ports:
       - "127.0.0.1:5102:8080"
     environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ConnectionStrings__EventDatabase: "Host=postgres;Port=5432;Database=eventrelay_events;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
     depends_on:
       postgres:
@@ -70,7 +72,8 @@ services:
     ports:
       - "127.0.0.1:5000:8080"
     environment:
-      ReverseProxy__Clusters__projects__Destinations__primary__Address: "http://control-plane-service:8080/"
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ReverseProxy__Clusters__controlPlane__Destinations__primary__Address: "http://control-plane-service:8080/"
       ReverseProxy__Clusters__events__Destinations__primary__Address: "http://event-service:8080/"
     depends_on:
       - control-plane-service

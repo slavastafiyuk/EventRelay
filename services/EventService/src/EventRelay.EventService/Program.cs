@@ -11,9 +11,12 @@ var connectionString =
 builder.Services.AddDbContext<EventDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment()) app.MapOpenApi();
 
 app.MapHealthChecks("/health");
 
