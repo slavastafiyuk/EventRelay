@@ -32,6 +32,9 @@
   <Folder Name="/Services/EventService/">
     <Project Path="services/EventService/src/EventRelay.EventService/EventRelay.EventService.csproj" />
   </Folder>
+  <Folder Name="/Infra/" />
+  <Folder Name="/Infra/Local/" />
+  <Folder Name="/Infra/Local/Keycloack/" />
   <Folder Name="/Services/" />
 
   <Folder Name="/Services/DeliveryService/">
