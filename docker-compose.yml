@@ -1,5 +1,18 @@
 
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:?Set KEYCLOAK_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: http://localhost:8081
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./infra/local/keycloak:/opt/keycloak/data/import:ro
   postgres:
     image: postgres:17-alpine
     environment:
@@ -17,6 +30,7 @@ services:
       timeout: 3s
       retries: 20
       start_period: 10s
+
   control-plane-migrations:
     build:
       context: .
@@ -38,9 +52,14 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ConnectionStrings__ProjectDatabase: "Host=postgres;Port=5432;Database=eventrelay_projects;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+      Authentication__Issuer: "http://localhost:8081/realms/eventrelay"
+      Authentication__MetadataAddress: "http://keycloak:8080/realms/eventrelay/.well-known/openid-configuration"
+      Authentication__Audience: "eventrelay-api"
     depends_on:
       control-plane-migrations:
         condition: service_completed_successfully
+      keycloak:
+        condition: service_started
 
   event-service:
     build:
@@ -81,3 +100,4 @@ services:
 
 volumes:
   postgres_data:
+  keycloak_data:

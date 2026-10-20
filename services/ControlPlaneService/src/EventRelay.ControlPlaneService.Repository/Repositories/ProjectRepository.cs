@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventRelay.ControlPlaneService.Repository.Repositories;
 
-public sealed class ProjectRepository(ProjectDbContext dbContext) : IProjectRepository
+public sealed class ProjectRepository(Infrastructure.Persistence.ControlPlaneDbContext dbContext) : IProjectRepository
 {
     public async Task AddAsync(
         Project project,
