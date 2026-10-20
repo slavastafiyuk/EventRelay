@@ -10,12 +10,26 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        bool isGeneratingOpenApi = false)
     {
-        var connectionString = configuration.GetConnectionString("ProjectDatabase") ??
-            throw new InvalidOperationException("ProjectDatabase connection string is missing.");
+        if (isGeneratingOpenApi)
+        {
+            // Maintain the DbContext DI registration without
+            // requiring a PostgreSQL connection during
+            // OpenAPI document generation.
+            services.AddDbContext<ProjectDbContext>();
+        }
+        else
+        {
+            var connectionString =
+                configuration.GetConnectionString("ProjectDatabase")
+                ?? throw new InvalidOperationException(
+                    "ProjectDatabase connection string is missing.");
 
-        services.AddDbContext<ProjectDbContext>(options => options.UseNpgsql(connectionString));
+            services.AddDbContext<ProjectDbContext>(options => options.UseNpgsql(connectionString));
+        }
+
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
         return services;
