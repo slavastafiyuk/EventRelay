@@ -17,6 +17,7 @@ config.Compile();
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddOpenApi();
 
 // Dependency Injection
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -28,6 +29,8 @@ builder.Services.AddPresentation();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment()) app.MapOpenApi();
 
 app.MapHealthChecks("/health");
 
