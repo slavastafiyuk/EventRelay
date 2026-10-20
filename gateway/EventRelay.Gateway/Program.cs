@@ -27,7 +27,19 @@ if (app.Environment.IsDevelopment())
                 "/docs/specs/events.json")
             .AddServer(
                 "http://localhost:5000",
-                "Local Gateway");
+                "Local Gateway")
+            .AddPreferredSecuritySchemes("OAuth2")
+            .AddAuthorizationCodeFlow("OAuth2", flow =>
+            {
+                flow.ClientId = "eventrelay-scalar";
+                flow.Pkce = Pkce.Sha256;
+                flow.RedirectUri = "http://localhost:5000/scalar/";
+                flow.SelectedScopes =
+                [
+                    "openid",
+                    "profile"
+                ];
+            });
     });
 }
 

@@ -5,7 +5,7 @@ using Npgsql;
 
 namespace EventRelay.ControlPlaneService.Infrastructure.Persistence;
 
-public sealed class EfUnitOfWork(ProjectDbContext dbContext) : IUnitOfWork
+public sealed class EfUnitOfWork(ControlPlaneDbContext dbContext) : IUnitOfWork
 {
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
     {

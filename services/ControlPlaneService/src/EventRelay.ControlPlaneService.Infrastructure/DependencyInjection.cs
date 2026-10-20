@@ -18,7 +18,7 @@ public static class DependencyInjection
             // Maintain the DbContext DI registration without
             // requiring a PostgreSQL connection during
             // OpenAPI document generation.
-            services.AddDbContext<ProjectDbContext>();
+            services.AddDbContext<DbContext>();
         }
         else
         {
@@ -27,7 +27,7 @@ public static class DependencyInjection
                 ?? throw new InvalidOperationException(
                     "ProjectDatabase connection string is missing.");
 
-            services.AddDbContext<ProjectDbContext>(options => options.UseNpgsql(connectionString));
+            services.AddDbContext<ControlPlaneDbContext>(options => options.UseNpgsql(connectionString));
         }
 
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();

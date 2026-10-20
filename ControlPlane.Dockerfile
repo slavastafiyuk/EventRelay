@@ -20,7 +20,7 @@ RUN ConnectionStrings__ProjectDatabase="Host=localhost;Database=unused;Username=
     dotnet ef migrations bundle \
     --project services/ControlPlaneService/src/EventRelay.ControlPlaneService.Infrastructure \
     --startup-project services/ControlPlaneService/src/EventRelay.ControlPlaneService.Api \
-    --context ProjectDbContext \
+    --context ControlPlaneDbContext \
     --configuration Release \
     --output /out/efbundle
 

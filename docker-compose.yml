@@ -38,9 +38,6 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__ProjectDatabase: "Host=postgres;Port=5432;Database=eventrelay_projects;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
-      Authentication__Issuer: "http://localhost:8081/realms/eventrelay"
-      Authentication__MetadataAddress: "http://keycloak:8080/realms/eventrelay/.well-known/openid-configuration"
-      Authentication__Audience: "eventrelay-api"
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,6 +52,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ConnectionStrings__ProjectDatabase: "Host=postgres;Port=5432;Database=eventrelay_projects;Username=eventrelay;Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}"
+      Authentication__Issuer: "http://localhost:8081/realms/eventrelay"
+      Authentication__MetadataAddress: "http://keycloak:8080/realms/eventrelay/.well-known/openid-configuration"
+      Authentication__Audience: "eventrelay-api"
     depends_on:
       control-plane-migrations:
         condition: service_completed_successfully

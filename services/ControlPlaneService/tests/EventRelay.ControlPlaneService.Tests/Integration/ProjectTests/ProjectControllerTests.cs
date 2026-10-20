@@ -125,11 +125,12 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
 
         Assert.NotNull(created);
 
-        var options = new DbContextOptionsBuilder<ProjectDbContext>()
-            .UseNpgsql(_container.ConnectionString)
-            .Options;
+        var options =
+            new DbContextOptionsBuilder<ControlPlaneDbContext>()
+                .UseNpgsql(_container.ConnectionString)
+                .Options;
 
-        await using var db = new ProjectDbContext(options);
+        await using var db = new ControlPlaneDbContext(options);
 
         var persisted = await db.Projects
             .AsNoTracking()

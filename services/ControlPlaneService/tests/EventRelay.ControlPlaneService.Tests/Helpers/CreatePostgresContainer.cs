@@ -19,13 +19,13 @@ public sealed class CreatePostgresContainer : IAsyncLifetime
         await _postgres.StartAsync();
         ConnectionString = _postgres.GetConnectionString();
 
-        var options = new DbContextOptionsBuilder<ProjectDbContext>()
+        var options = new DbContextOptionsBuilder<ControlPlaneDbContext>()
             .UseNpgsql(ConnectionString)
             .Options;
 
-        await using (var db = new ProjectDbContext(options))
+        await using (var db = new ControlPlaneDbContext(options))
         {
-            await db.Database.MigrateAsync();
+            await RelationalDatabaseFacadeExtensions.MigrateAsync(db.Database);
         }
 
         _factory = new ApiFactory(ConnectionString);

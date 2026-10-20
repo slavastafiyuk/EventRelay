@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventRelay.ControlPlaneService.Infrastructure.Persistence;
 
-public sealed class ProjectDbContext(
-    DbContextOptions<ProjectDbContext> options)
+public sealed class ControlPlaneDbContext(
+    DbContextOptions<ControlPlaneDbContext> options)
     : DbContext(options)
 {
     public DbSet<ProjectRecord> Projects => Set<ProjectRecord>();
@@ -13,8 +13,6 @@ public sealed class ProjectDbContext(
         ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        modelBuilder.ApplyConfigurationsFromAssembly(
-            typeof(ProjectDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ControlPlaneDbContext).Assembly);
     }
 }

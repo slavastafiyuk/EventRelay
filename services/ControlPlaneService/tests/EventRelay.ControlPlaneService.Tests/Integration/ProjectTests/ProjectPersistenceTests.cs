@@ -18,20 +18,20 @@ public sealed class ProjectPersistenceTests
         await postgres.StartAsync();
 
         var options =
-            new DbContextOptionsBuilder<ProjectDbContext>()
+            new DbContextOptionsBuilder<ControlPlaneDbContext>()
                 .UseNpgsql(postgres.GetConnectionString())
                 .Options;
 
 
-        await using (var db = new ProjectDbContext(options))
+        await using (var db = new ControlPlaneDbContext(options))
         {
-            await db.Database.MigrateAsync();
+            await RelationalDatabaseFacadeExtensions.MigrateAsync(db.Database);
 
-            var applied = await db.Database.GetAppliedMigrationsAsync();
-            Assert.NotEmpty(applied);
+            var applied = await RelationalDatabaseFacadeExtensions.GetAppliedMigrationsAsync(db.Database);
+            Assert.NotEmpty((System.Collections.IEnumerable)applied);
 
-            var pending = await db.Database.GetPendingMigrationsAsync();
-            Assert.Empty(pending);
+            var pending = await RelationalDatabaseFacadeExtensions.GetPendingMigrationsAsync(db.Database);
+            Assert.Empty((System.Collections.IEnumerable)pending);
         }
 
 
@@ -48,7 +48,7 @@ public sealed class ProjectPersistenceTests
             Description = original.Description
         };
 
-        await using (var db = new ProjectDbContext(options))
+        await using (var db = new Infrastructure.Persistence.ControlPlaneDbContext((DbContextOptions<Infrastructure.Persistence.ControlPlaneDbContext>)options))
         {
             db.Projects.Add(record);
 
@@ -57,7 +57,7 @@ public sealed class ProjectPersistenceTests
 
         ProjectRecord? loadedRecord;
 
-        await using (var db = new ProjectDbContext(options))
+        await using (var db = new Infrastructure.Persistence.ControlPlaneDbContext((DbContextOptions<Infrastructure.Persistence.ControlPlaneDbContext>)options))
         {
             loadedRecord = await db.Projects
                 .AsNoTracking()
