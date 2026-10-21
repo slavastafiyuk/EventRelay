@@ -34,7 +34,9 @@
   </Folder>
   <Folder Name="/Infra/" />
   <Folder Name="/Infra/Local/" />
-  <Folder Name="/Infra/Local/Keycloack/" />
+  <Folder Name="/Infra/Local/Keycloack/">
+    <File Path="eventrelay-realm.json" />
+  </Folder>
   <Folder Name="/Services/" />
 
   <Folder Name="/Services/DeliveryService/">
