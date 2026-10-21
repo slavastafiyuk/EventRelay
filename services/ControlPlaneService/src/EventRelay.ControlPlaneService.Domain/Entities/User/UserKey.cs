@@ -1,8 +1,6 @@
-using EventRelay.ControlPlaneService.Domain.Entities.Project;
-
 namespace EventRelay.ControlPlaneService.Domain.Entities.User;
 
-public class UserKey : KeyBase<ProjectKey>
+public class UserKey : KeyBase<UserKey>
 {
     public string Name { get; set; } = null!;
     private UserKey() { }
