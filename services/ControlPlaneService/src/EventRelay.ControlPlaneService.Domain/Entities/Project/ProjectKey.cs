@@ -1,6 +1,6 @@
 namespace EventRelay.ControlPlaneService.Domain.Entities.Project;
 
-public class ProjectKey : KeyBase<ProjectKey, string>
+public class ProjectKey : KeyBaseAlternative<ProjectKey, string>
 {
     public string Name
     {

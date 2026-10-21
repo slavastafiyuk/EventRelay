@@ -18,6 +18,28 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
         _client = container.Client;
     }
 
+    private async Task<HttpResponseMessage> PostAsUserAsync(ProjectCreateDTO dto)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post, "/api/projects");
+
+        request.Headers.Add("X-Test-User", "user-a");
+        request.Content = JsonContent.Create(dto);
+
+        return await _client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> GetAsUserAsync(Guid projectId)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/projects/{projectId}");
+
+        request.Headers.Add("X-Test-User", "user-a");
+
+        return await _client.SendAsync(request);
+    }
+
     [Fact]
     public async Task Create_ThenGetById_ReturnsPersistedProject()
     {
@@ -29,26 +51,22 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
             Description = "Online store project"
         };
 
-        using var createResponse =
-            await _client.PostAsJsonAsync("/api/projects", request);
+        using var createResponse = await PostAsUserAsync(request);
 
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
 
-        var created =
-            await createResponse.Content.ReadFromJsonAsync<ProjectKeyDTO>();
+        var created = await createResponse.Content.ReadFromJsonAsync<ProjectKeyDTO>();
 
         Assert.NotNull(created);
         Assert.NotEqual(Guid.Empty, created.Id);
         Assert.Equal(name, created.Name);
         Assert.NotNull(createResponse.Headers.Location);
 
-        using var getResponse =
-            await _client.GetAsync($"/api/projects/{created.Id}");
+        using var getResponse = await GetAsUserAsync(created.Id);
 
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
 
-        var retrieved =
-            await getResponse.Content.ReadFromJsonAsync<ProjectDTO>();
+        var retrieved = await getResponse.Content.ReadFromJsonAsync<ProjectDTO>();
 
         Assert.NotNull(retrieved);
         Assert.Equal(created.Id, retrieved.Key.Id);
@@ -66,13 +84,11 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
             Name = $"Duplicate-{Guid.NewGuid():N}"
         };
 
-        using var firstResponse =
-            await _client.PostAsJsonAsync("/api/projects", request);
+        using var firstResponse = await PostAsUserAsync(request);
 
         Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
 
-        using var duplicateResponse =
-            await _client.PostAsJsonAsync("/api/projects", request);
+        using var duplicateResponse = await PostAsUserAsync(request);
 
         Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
 
@@ -81,8 +97,7 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
     [Fact]
     public async Task GetById_UnknownProject_ReturnsNotFound()
     {
-        using var response =
-            await _client.GetAsync($"/api/projects/{Guid.NewGuid()}");
+        using var response = await GetAsUserAsync(Guid.NewGuid());
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -90,14 +105,12 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
     [Fact]
     public async Task Create_NameTooLong_ReturnsBadRequest()
     {
-
         var request = new ProjectCreateDTO
         {
             Name = new string('A', 151)
         };
 
-        using var response =
-            await _client.PostAsJsonAsync("/api/projects", request);
+        using var response = await PostAsUserAsync(request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -114,19 +127,15 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
             Description = "PostgreSQL integration test"
         };
 
-        using var response = await _client.PostAsJsonAsync(
-            "/api/projects",
-            request);
+        using var response = await PostAsUserAsync(request);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        var created =
-            await response.Content.ReadFromJsonAsync<ProjectKeyDTO>();
+        var created = await response.Content.ReadFromJsonAsync<ProjectKeyDTO>();
 
         Assert.NotNull(created);
 
-        var options =
-            new DbContextOptionsBuilder<ControlPlaneDbContext>()
+        var options = new DbContextOptionsBuilder<ControlPlaneDbContext>()
                 .UseNpgsql(_container.ConnectionString)
                 .Options;
 
@@ -149,11 +158,28 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
             Name = "   "
         };
 
-        using var response = await _client.PostAsJsonAsync(
-            "/api/projects",
-            request);
+        using var response = await PostAsUserAsync(request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Create_WithoutAuthentication_Returns401()
+    {
+        var dto = new ProjectCreateDTO
+        {
+            Name = "UnauthorizedProject"
+        };
+
+        using var response = await _client.PostAsJsonAsync("/api/projects", dto);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetById_WithoutAuthentication_Returns401()
+    {
+        using var response = await _client.GetAsync($"/api/projects/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }

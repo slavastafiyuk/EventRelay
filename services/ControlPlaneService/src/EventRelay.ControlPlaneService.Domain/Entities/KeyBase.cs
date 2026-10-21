@@ -2,16 +2,11 @@ using EventRelay.ControlPlaneService.Domain.Interfaces;
 
 namespace EventRelay.ControlPlaneService.Domain.Entities;
 
-public abstract class KeyBase<TSelf, TSecondary>
-    : IKeyBase,
-      ISecondaryKey<TSecondary>,
-      IEquatable<TSelf>
-    where TSelf : KeyBase<TSelf, TSecondary>
-    where TSecondary : notnull
+public abstract class KeyBase<TSelf>
+    : IKeyBase, IEquatable<TSelf>
+    where TSelf : KeyBase<TSelf>
 {
     public Guid Id { get; private set; }
-
-    public abstract TSecondary SecondaryKey { get; }
 
     protected KeyBase() => Id = Guid.CreateVersion7();
 
@@ -31,20 +26,6 @@ public abstract class KeyBase<TSelf, TSecondary>
                && Id != Guid.Empty
                && Id == other.Id);
 
-    public bool MatchesSecondaryKey(
-        TSelf? other,
-        IEqualityComparer<TSecondary>? comparer = null)
-    {
-        if (other is null || GetType() != other.GetType())
-            return false;
-
-        comparer ??= EqualityComparer<TSecondary>.Default;
-
-        return comparer.Equals(
-            SecondaryKey,
-            other.SecondaryKey);
-    }
-
     public override bool Equals(object? obj)
         => obj is TSelf other && Equals(other);
 
@@ -52,12 +33,12 @@ public abstract class KeyBase<TSelf, TSecondary>
         => HashCode.Combine(GetType(), Id);
 
     public static bool operator ==(
-        KeyBase<TSelf, TSecondary>? left,
-        KeyBase<TSelf, TSecondary>? right)
+        KeyBase<TSelf>? left,
+        KeyBase<TSelf>? right)
         => object.Equals(left, right);
 
     public static bool operator !=(
-        KeyBase<TSelf, TSecondary>? left,
-        KeyBase<TSelf, TSecondary>? right)
+        KeyBase<TSelf>? left,
+        KeyBase<TSelf>? right)
         => !(left == right);
 }
