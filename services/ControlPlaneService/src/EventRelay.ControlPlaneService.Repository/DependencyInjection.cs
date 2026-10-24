@@ -1,4 +1,5 @@
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
+using EventRelay.ControlPlaneService.Application.Abstractions.Users;
 using EventRelay.ControlPlaneService.Repository.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,6 +11,7 @@ public static class DependencyInjection
         this IServiceCollection services)
     {
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
 
         return services;
     }

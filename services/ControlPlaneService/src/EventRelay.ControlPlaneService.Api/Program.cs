@@ -1,4 +1,5 @@
 using System.Reflection;
+using EventRelay.ControlPlaneService.Api.Middlware;
 using EventRelay.ControlPlaneService.Application;
 using EventRelay.ControlPlaneService.Infrastructure;
 using EventRelay.ControlPlaneService.Presentation;
@@ -133,6 +134,7 @@ if (app.Environment.IsDevelopment()) app.MapOpenApi();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<EnsureUserProvisionedMiddleware>();
 app.MapHealthChecks("/health");
 app.MapControllers();
 
