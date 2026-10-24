@@ -34,5 +34,23 @@
         }
       ]
     }
+  ],
+  "users": [
+    {
+      "username": "eventrelay-dev",
+      "enabled": true,
+      "email": "dev@eventrelay.local",
+      "emailVerified": true,
+      "firstName": "EventRelay",
+      "lastName": "Developer",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
+    }
   ]
 }
