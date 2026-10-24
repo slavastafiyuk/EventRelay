@@ -4,11 +4,7 @@ namespace EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 
 public interface IProjectRepository
 {
-    Task AddAsync(
-    Project project,
-    CancellationToken cancellationToken);
+    Task AddAsync(Project project, CancellationToken cancellationToken);
 
-    Task<Project?> GetByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken);
+    Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 }

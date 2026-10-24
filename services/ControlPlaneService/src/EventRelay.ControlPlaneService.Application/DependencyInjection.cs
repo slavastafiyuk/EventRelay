@@ -1,5 +1,6 @@
 using EventRelay.ControlPlaneService.Application.Abstractions;
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
+using EventRelay.ControlPlaneService.Application.Abstractions.Users;
 using EventRelay.ControlPlaneService.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +13,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IStatusService, StatusService>();
         services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }

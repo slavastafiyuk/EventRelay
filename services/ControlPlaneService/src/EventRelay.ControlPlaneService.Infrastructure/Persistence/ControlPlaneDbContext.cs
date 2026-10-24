@@ -8,6 +8,7 @@ public sealed class ControlPlaneDbContext(
     : DbContext(options)
 {
     public DbSet<ProjectRecord> Projects => Set<ProjectRecord>();
+    public DbSet<UserRecord> Users => Set<UserRecord>();
 
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)
