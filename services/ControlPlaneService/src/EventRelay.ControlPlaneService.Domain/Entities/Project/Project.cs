@@ -1,3 +1,5 @@
+using CommunityToolkit.Diagnostics;
+using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 
 namespace EventRelay.ControlPlaneService.Domain.Entities.Project;
@@ -8,7 +10,21 @@ public class Project
     public string? Description { get; set; }
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public UserKey Owner { get; private set; } = null!;
-    public ProjectAccess Access { get; set; } = new();
+    public ProjectAccess Access { get; private set; } = new();
+
+    public void AddMember(UserKey user, ProjectRole role)
+    {
+        Guard.IsNotNull(user);
+
+        if (user.Equals(Owner))
+            throw new InvalidOperationException("Project owner cannot be added as a member.");
+
+        Access.AddMember(user, role);
+    }
+
+    public void RemoveMember(UserKey user) => Access.RemoveMember(user);
+
+    public void ChangeVisibility(ProjectVisibility visibility) => Access.SetVisibility(visibility);
 
     private Project() { }
     public Project(ProjectKey key) => Key = key ?? throw new ArgumentNullException(nameof(key));

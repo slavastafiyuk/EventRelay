@@ -1,4 +1,4 @@
-namespace EventRelay.ControlPlaneService.Domain.Entities.Project;
+namespace EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 
 public enum ProjectVisibility
 {
