@@ -65,23 +65,12 @@ public sealed class Mapping : IRegister
 
     private static Project ToDomain(ProjectRecord record)
     {
-        var project = new Project(
+        return Project.Restore(
             new ProjectKey(record.Id, record.Name),
             record.Owner.Adapt<UserKey>(),
-            record.CreatedAt)
-        {
-            Description = record.Description
-        };
-
-        project.ChangeVisibility(record.Access.Visibility);
-
-        foreach (var member in record.Access.Members)
-        {
-            project.AddMember(
-                member.User.Adapt<UserKey>(),
-                member.Role);
-        }
-        return project;
+            record.CreatedAt,
+            record.Description,
+            record.Access.Adapt<ProjectAccess>());
     }
 
     private static ProjectAccess RestoreAccess(ProjectAccessRecord record)

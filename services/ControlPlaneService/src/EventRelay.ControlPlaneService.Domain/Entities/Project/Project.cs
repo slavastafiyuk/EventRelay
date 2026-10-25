@@ -38,6 +38,28 @@ public class Project
             && Access.Members.Any(member => member.User.Equals(user));
     }
 
+    public static Project Restore(
+    ProjectKey key,
+    UserKey owner,
+    DateTime createdAt,
+    string? description,
+    ProjectAccess access)
+    {
+        ArgumentNullException.ThrowIfNull(access);
+
+        var project = new Project(key, owner, createdAt)
+        {
+            Description = description,
+            Access = access
+        };
+
+        if (access.Members.Any(m => m.User.Equals(owner)))
+            throw new InvalidOperationException(
+                "Project owner cannot be a member.");
+
+        return project;
+    }
+
     private Project() { }
     public Project(ProjectKey key, UserKey owner)
     {

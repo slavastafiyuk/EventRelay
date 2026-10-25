@@ -21,12 +21,16 @@ public sealed class Mapping : IRegister
 
         config.NewConfig<ProjectKey, ProjectKeyDTO>();
         config.NewConfig<Project, ProjectDTO>()
-            .Map(dest => dest.Key, src => src.Key)
-            .Map(dest => dest.Access, src => src.Access);
+            .MapWith(src => ToProjectDTO(src));
         config.NewConfig<ProjectKeyDTO, ProjectKey>()
             .MapToConstructor(true);
         config.NewConfig<ProjectDTO, Project>()
-            .MapToConstructor(true);
+            .MapWith(src => Project.Restore(
+                new ProjectKey(src.Key.Id, src.Key.Name),
+                new UserKey(src.Owner.Id, src.Owner.Name),
+                src.CreatedAt,
+                src.Description,
+                src.Access.Adapt<ProjectAccess>()));
         config.NewConfig<ProjectCreateDTO, Project>()
             .ConstructUsing(src => new Project(
                 new ProjectKey(src.Name),
@@ -37,27 +41,22 @@ public sealed class Mapping : IRegister
         #region Project Access Mappings
 
         config.NewConfig<ProjectAccess, ProjectAccessDTO>()
-            .Map(dest => dest.Visibility, src => (ProjectVisibilityDTO)src.Visibility);
+            .Map(dest => dest.Visibility,
+                 src => (ProjectVisibilityDTO)src.Visibility);
 
         config.NewConfig<ProjectAccessDTO, ProjectAccess>()
-            .MapToConstructor(true)
-            .Map(dest => dest.Visibility, src => (ProjectVisibility)src.Visibility);
+            .MapWith(src => ProjectAccess.Restore(
+                (ProjectVisibility)src.Visibility,
+                src.Members.Select(m => ToDomainMember(m))));
 
         config.NewConfig<ProjectMember, ProjectMemberDTO>()
-            .Map(dest => dest.Role, src => (ProjectRoleDTO)(int)src.Role);
+            .Map(dest => dest.Role,
+                 src => (ProjectRoleDTO)src.Role);
 
         config.NewConfig<ProjectMemberDTO, ProjectMember>()
-            .MapToConstructor(true)
-            .Map(dest => dest.Role, src => (ProjectRole)src.Role);
+            .MapWith(src => ToDomainMember(src));
 
-        config.NewConfig<ProjectMember, ProjectMemberDTO>()
-            .Map(dest => dest.User, src => src.User)
-            .Map(dest => dest.Role, src => (ProjectRoleDTO)src.Role);
-
-        config.NewConfig<ProjectMemberDTO, ProjectMember>()
-            .MapToConstructor(true);
-
-        #endregion Project Access Mappings
+        #endregion
 
         #region User Mappings
 
@@ -72,5 +71,24 @@ public sealed class Mapping : IRegister
         config.NewConfig<UserKey, UserKeyDTO>();
 
         #endregion User Mappings
+    }
+
+    private static ProjectMember ToDomainMember(ProjectMemberDTO dto)
+    {
+        return new ProjectMember(
+            dto.User.Adapt<UserKey>(),
+            (ProjectRole)dto.Role);
+    }
+
+    private static ProjectDTO ToProjectDTO(Project project)
+    {
+        return new ProjectDTO
+        {
+            Key = project.Key.Adapt<ProjectKeyDTO>(),
+            Description = project.Description,
+            Access = project.Access.Adapt<ProjectAccessDTO>(),
+            Owner = project.Owner.Adapt<UserKeyDTO>(),
+            CreatedAt = project.CreatedAt
+        };
     }
 }
