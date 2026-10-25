@@ -26,14 +26,16 @@ public class Project
 
     public void ChangeVisibility(ProjectVisibility visibility) => Access.SetVisibility(visibility);
 
-    public void AssignOwner(UserKey owner)
+    public bool CanRead(UserKey user)
     {
-        ArgumentNullException.ThrowIfNull(owner);
+        ArgumentNullException.ThrowIfNull(user);
 
-        if (Owner is not null)
-            throw new InvalidOperationException("Owner is already assigned.");
+        if (Owner.Equals(user)) return true;
 
-        Owner = owner;
+        if (Access.Visibility == ProjectVisibility.Public) return true;
+
+        return Access.Visibility == ProjectVisibility.Internal
+            && Access.Members.Any(member => member.User.Equals(user));
     }
 
     private Project() { }
@@ -41,5 +43,9 @@ public class Project
     {
         Key = key ?? throw new ArgumentNullException(nameof(key));
         Owner = owner ?? throw new ArgumentNullException(nameof(owner));
+    }
+    public Project(ProjectKey key, UserKey owner, DateTime createdAt) : this(key, owner)
+    {
+        CreatedAt = createdAt;
     }
 }

@@ -51,7 +51,7 @@ public sealed class Mapping : IRegister
             .Map(dest => dest.Role, src => (ProjectRole)src.Role);
 
         config.NewConfig<ProjectMember, ProjectMemberDTO>()
-            .Map(dest => dest.User, src => src.UserKey)
+            .Map(dest => dest.User, src => src.User)
             .Map(dest => dest.Role, src => (ProjectRoleDTO)src.Role);
 
         config.NewConfig<ProjectMemberDTO, ProjectMember>()

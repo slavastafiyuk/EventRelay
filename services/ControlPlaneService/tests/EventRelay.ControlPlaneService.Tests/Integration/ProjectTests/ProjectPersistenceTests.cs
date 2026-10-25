@@ -1,7 +1,8 @@
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
-using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
@@ -71,7 +72,7 @@ public sealed class ProjectPersistenceTests
 
         var loaded = new Project(
             new ProjectKey(loadedRecord.Id, loadedRecord.Name),
-            new UserKey(loadedRecord.OwnerId, loadedRecord.OwnerName))
+            loadedRecord.Owner.Adapt<UserKey>())
         {
             Description = loadedRecord.Description
         };
