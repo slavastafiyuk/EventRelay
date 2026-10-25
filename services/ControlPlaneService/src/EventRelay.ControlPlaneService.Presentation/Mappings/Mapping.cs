@@ -1,3 +1,4 @@
+using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Application.Models;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
@@ -27,7 +28,9 @@ public sealed class Mapping : IRegister
         config.NewConfig<ProjectDTO, Project>()
             .MapToConstructor(true);
         config.NewConfig<ProjectCreateDTO, Project>()
-            .ConstructUsing(src => new Project(new ProjectKey(src.Name)));
+            .ConstructUsing(src => new Project(
+                new ProjectKey(src.Name),
+                MapContext.Current!.GetService<ICurrentUser>().UserKey));
 
         #endregion Project Mappings
 
@@ -36,6 +39,10 @@ public sealed class Mapping : IRegister
         config.NewConfig<ProjectAccess, ProjectAccessDTO>()
             .Map(dest => dest.Visibility, src => (ProjectVisibilityDTO)src.Visibility);
 
+        config.NewConfig<ProjectAccessDTO, ProjectAccess>()
+            .MapToConstructor(true)
+            .Map(dest => dest.Visibility, src => (ProjectVisibility)src.Visibility);
+
         config.NewConfig<ProjectMember, ProjectMemberDTO>()
             .Map(dest => dest.Role, src => (ProjectRoleDTO)(int)src.Role);
 
@@ -43,9 +50,12 @@ public sealed class Mapping : IRegister
             .MapToConstructor(true)
             .Map(dest => dest.Role, src => (ProjectRole)src.Role);
 
-        config.NewConfig<ProjectAccessDTO, ProjectAccess>()
-            .MapToConstructor(true)
-            .Map(dest => dest.Visibility, src => (ProjectVisibility)src.Visibility);
+        config.NewConfig<ProjectMember, ProjectMemberDTO>()
+            .Map(dest => dest.User, src => src.UserKey)
+            .Map(dest => dest.Role, src => (ProjectRoleDTO)src.Role);
+
+        config.NewConfig<ProjectMemberDTO, ProjectMember>()
+            .MapToConstructor(true);
 
         #endregion Project Access Mappings
 
@@ -55,6 +65,11 @@ public sealed class Mapping : IRegister
             .MapWith(src => new User(new UserKey(src.Name),
             src.Issuer,
             src.Subject));
+
+        config.NewConfig<UserKeyDTO, UserKey>()
+            .MapToConstructor(true);
+
+        config.NewConfig<UserKey, UserKeyDTO>();
 
         #endregion User Mappings
     }

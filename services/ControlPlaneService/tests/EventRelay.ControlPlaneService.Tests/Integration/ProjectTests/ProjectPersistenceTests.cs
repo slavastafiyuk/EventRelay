@@ -1,4 +1,5 @@
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
+using EventRelay.ControlPlaneService.Domain.Entities.User;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
@@ -33,10 +34,11 @@ public sealed class ProjectPersistenceTests
             var pending = await RelationalDatabaseFacadeExtensions.GetPendingMigrationsAsync(db.Database);
             Assert.Empty((System.Collections.IEnumerable)pending);
         }
-
+        var owner = new UserKey("TestOwner");
 
         var original = new Project(
-            new ProjectKey("MyStore"))
+            new ProjectKey("MyStore"),
+            owner)
         {
             Description = "Online shop"
         };
@@ -68,9 +70,8 @@ public sealed class ProjectPersistenceTests
         Assert.NotNull(loadedRecord);
 
         var loaded = new Project(
-            new ProjectKey(
-                loadedRecord.Id,
-                loadedRecord.Name))
+            new ProjectKey(loadedRecord.Id, loadedRecord.Name),
+            new UserKey(loadedRecord.OwnerId, loadedRecord.OwnerName))
         {
             Description = loadedRecord.Description
         };

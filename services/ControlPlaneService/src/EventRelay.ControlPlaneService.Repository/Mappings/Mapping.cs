@@ -15,7 +15,8 @@ public sealed class Mapping : IRegister
 
         config.NewConfig<ProjectRecord, Project>()
             .MapWith(src => new Project(
-                new ProjectKey(src.Id, src.Name))
+                new ProjectKey(src.Id, src.Name),
+                new UserKey(src.OwnerId, src.OwnerName))
             {
                 Description = src.Description
             });

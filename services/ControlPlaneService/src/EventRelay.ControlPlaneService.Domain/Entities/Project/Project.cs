@@ -26,6 +26,20 @@ public class Project
 
     public void ChangeVisibility(ProjectVisibility visibility) => Access.SetVisibility(visibility);
 
+    public void AssignOwner(UserKey owner)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+
+        if (Owner is not null)
+            throw new InvalidOperationException("Owner is already assigned.");
+
+        Owner = owner;
+    }
+
     private Project() { }
-    public Project(ProjectKey key) => Key = key ?? throw new ArgumentNullException(nameof(key));
+    public Project(ProjectKey key, UserKey owner)
+    {
+        Key = key ?? throw new ArgumentNullException(nameof(key));
+        Owner = owner ?? throw new ArgumentNullException(nameof(owner));
+    }
 }
