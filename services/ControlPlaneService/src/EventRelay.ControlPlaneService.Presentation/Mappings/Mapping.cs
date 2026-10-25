@@ -1,4 +1,3 @@
-using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Application.Models;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
@@ -32,9 +31,7 @@ public sealed class Mapping : IRegister
                 src.Description,
                 src.Access.Adapt<ProjectAccess>()));
         config.NewConfig<ProjectCreateDTO, Project>()
-            .ConstructUsing(src => new Project(
-                new ProjectKey(src.Name),
-                MapContext.Current!.GetService<ICurrentUser>().UserKey));
+            .Ignore(dest => dest.Owner);
 
         #endregion Project Mappings
 
