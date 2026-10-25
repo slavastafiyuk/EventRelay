@@ -1,4 +1,4 @@
-namespace EventRelay.ControlPlaneService.Presentation.Contracts.Project;
+namespace EventRelay.ControlPlaneService.Presentation.Contracts.Project.Access;
 
 public enum ProjectVisibilityDTO
 {
