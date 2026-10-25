@@ -1,3 +1,4 @@
+using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
 using EventRelay.ControlPlaneService.Presentation.Contracts.User;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,8 @@ public sealed class EnsureUserProvisionedMiddleware(RequestDelegate next)
     public async Task InvokeAsync(
         HttpContext context,
         IUserHandler userHandler,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ICurrentUserInitializer currentUserInitializer)
     {
         var endpoint = context.GetEndpoint();
 
@@ -64,7 +66,8 @@ public sealed class EnsureUserProvisionedMiddleware(RequestDelegate next)
             Name = name
         };
 
-        await userHandler.EnsureExistsAsync(dto, context.RequestAborted);
+        var userKey = await userHandler.EnsureExistsAsync(dto, context.RequestAborted);
+        currentUserInitializer.Initialize(userKey);
         await next(context);
     }
 }

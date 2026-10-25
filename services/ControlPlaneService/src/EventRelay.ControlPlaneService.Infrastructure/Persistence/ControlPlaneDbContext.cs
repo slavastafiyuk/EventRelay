@@ -1,4 +1,5 @@
-using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventRelay.ControlPlaneService.Infrastructure.Persistence;

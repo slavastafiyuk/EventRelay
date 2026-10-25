@@ -1,7 +1,7 @@
 using EventRelay.ControlPlaneService.Application.Abstractions.Users;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
-using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 

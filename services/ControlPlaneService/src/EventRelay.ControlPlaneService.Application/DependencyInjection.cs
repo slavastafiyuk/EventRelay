@@ -1,4 +1,5 @@
 using EventRelay.ControlPlaneService.Application.Abstractions;
+using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 using EventRelay.ControlPlaneService.Application.Abstractions.Users;
 using EventRelay.ControlPlaneService.Application.Services;
@@ -14,6 +15,9 @@ public static class DependencyInjection
         services.AddScoped<IStatusService, StatusService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<CurrentUser>();
+        services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUser>());
+        services.AddScoped<ICurrentUserInitializer>(sp => sp.GetRequiredService<CurrentUser>());
 
         return services;
     }

@@ -26,6 +26,26 @@ public class Project
 
     public void ChangeVisibility(ProjectVisibility visibility) => Access.SetVisibility(visibility);
 
+    public bool CanRead(UserKey user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        if (Owner.Equals(user)) return true;
+
+        if (Access.Visibility == ProjectVisibility.Public) return true;
+
+        return Access.Visibility == ProjectVisibility.Internal
+            && Access.Members.Any(member => member.User.Equals(user));
+    }
+
     private Project() { }
-    public Project(ProjectKey key) => Key = key ?? throw new ArgumentNullException(nameof(key));
+    public Project(ProjectKey key, UserKey owner)
+    {
+        Key = key ?? throw new ArgumentNullException(nameof(key));
+        Owner = owner ?? throw new ArgumentNullException(nameof(owner));
+    }
+    public Project(ProjectKey key, UserKey owner, DateTime createdAt) : this(key, owner)
+    {
+        CreatedAt = createdAt;
+    }
 }

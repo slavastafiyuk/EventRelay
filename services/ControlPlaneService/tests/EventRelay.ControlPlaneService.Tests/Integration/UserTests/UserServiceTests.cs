@@ -4,7 +4,7 @@ using EventRelay.ControlPlaneService.Infrastructure.Persistence;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Exceptions;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Exceptions.Abstraction;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Exceptions.Recovery;
-using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
 using EventRelay.ControlPlaneService.Repository.Repositories;
 using EventRelay.ControlPlaneService.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;

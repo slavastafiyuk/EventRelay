@@ -3,16 +3,17 @@ using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
 using Mapster;
+using MapsterMapper;
 
 namespace EventRelay.ControlPlaneService.Presentation.Handlers;
 
 public class ProjectHandler(
-    IProjectService projectService) : IProjectHandler
+    IProjectService projectService,
+    IMapper mapper) : IProjectHandler
 {
     public async Task<ProjectKeyDTO> CreateAsync(ProjectCreateDTO dto, CancellationToken cancellationToken)
     {
-
-        var project = dto.Adapt<Project>();
+        var project = mapper.Map<Project>(dto);
 
         var result = await projectService.CreateAsync(
             project,

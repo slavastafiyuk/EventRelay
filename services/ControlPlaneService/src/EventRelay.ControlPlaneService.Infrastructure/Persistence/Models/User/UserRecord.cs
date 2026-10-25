@@ -1,6 +1,6 @@
-namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Models;
+namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
 
-public sealed class UserRecord
+public sealed record UserRecord
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;
