@@ -8,5 +8,6 @@ public sealed record ProjectDTO
     public required ProjectKeyDTO Key { get; init; }
     public string? Description { get; init; }
     public ProjectAccessDTO Access { get; init; } = new();
+    public DateTime CreatedAt { get; internal init; }
     public required UserKeyDTO Owner { get; init; }
 }
