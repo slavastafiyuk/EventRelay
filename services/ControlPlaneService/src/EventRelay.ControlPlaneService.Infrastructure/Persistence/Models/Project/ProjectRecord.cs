@@ -10,6 +10,7 @@ public sealed class ProjectRecord
     public string? Description { get; set; }
     public DateTime CreatedAt { get; set; }
 
+    public Guid OwnerId { get; set; }
     public UserKeyRecord Owner { get; set; } = null!;
 
     public ProjectAccessRecord Access { get; set; } = null!;
