@@ -48,4 +48,7 @@
   <Folder Name="/Tests/ControlPlaneService/">
     <Project Path="services/ControlPlaneService/tests/EventRelay.ControlPlaneService.Tests/EventRelay.ControlPlaneService.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="MigrationManager/MigrationManager.csproj" Id="e2bad8d0-dc20-4489-9289-0e7248a67911" />
+  </Folder>
 </Solution>
