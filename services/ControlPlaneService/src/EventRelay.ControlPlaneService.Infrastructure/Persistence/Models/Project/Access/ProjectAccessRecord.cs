@@ -4,6 +4,7 @@ namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Proje
 
 public sealed record ProjectAccessRecord
 {
+    public Guid ProjectId { get; set; }
     public ProjectVisibility Visibility { get; set; } = ProjectVisibility.Private;
 
     public List<ProjectMemberRecord> Members { get; set; } = new();

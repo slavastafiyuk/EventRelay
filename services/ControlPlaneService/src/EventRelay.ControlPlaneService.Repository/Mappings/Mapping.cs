@@ -42,6 +42,7 @@ public sealed class Mapping : IRegister
                 src.Role));
 
         config.NewConfig<ProjectAccess, ProjectAccessRecord>()
+            .Ignore(dest => dest.ProjectId)
             .Map(dest => dest.Visibility, src => src.Visibility)
             .Map(dest => dest.Members, src => src.Members);
 
@@ -53,7 +54,8 @@ public sealed class Mapping : IRegister
             .Map(dest => dest.Name, src => src.Key.Name)
             .Map(dest => dest.Description, src => src.Description)
             .Map(dest => dest.CreatedAt, src => src.CreatedAt)
-            .Map(dest => dest.Owner, src => src.Owner)
+            .Map(dest => dest.OwnerId, src => src.Owner.Id)
+            .Ignore(dest => dest.Owner)
             .Map(dest => dest.Access, src => src.Access);
 
         config.NewConfig<ProjectRecord, Project>()
