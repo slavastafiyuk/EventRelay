@@ -33,8 +33,10 @@ public sealed class Mapping : IRegister
         #region Project Mappings
 
         config.NewConfig<ProjectMember, ProjectMemberRecord>()
-            .Map(dest => dest.User, src => src.User)
-            .Map(dest => dest.Role, src => src.Role);
+             .Map(dest => dest.UserId, src => src.User.Id)
+             .Map(dest => dest.Role, src => src.Role)
+             .Ignore(dest => dest.ProjectId)
+             .Ignore(dest => dest.User);
 
         config.NewConfig<ProjectMemberRecord, ProjectMember>()
             .MapWith(src => new ProjectMember(

@@ -12,7 +12,7 @@ namespace EventRelay.ControlPlaneService.Tests.Unit.Mappings;
 public sealed class RepositoryMappingTests
 {
     [Fact]
-    public void Project_MapsToRecord_IncludingOwnerAccessAndMembers()
+    public void Project_MapsToRecord_WithForeignKeysAndAccess()
     {
         var original = CreateInternalProject();
 
@@ -22,28 +22,30 @@ public sealed class RepositoryMappingTests
         Assert.Equal(original.Key.Name, record.Name);
         Assert.Equal(original.Description, record.Description);
         Assert.Equal(original.CreatedAt, record.CreatedAt);
-        Assert.Equal(original.Owner.Id, record.Owner.Id);
-        Assert.Equal(original.Owner.Name, record.Owner.Name);
+        Assert.Equal(original.Owner.Id, record.OwnerId);
+        Assert.Null(record.Owner);
         Assert.Equal(ProjectVisibility.Internal, record.Access.Visibility);
 
         var originalMember = Assert.Single(original.Access.Members);
         var recordMember = Assert.Single(record.Access.Members);
 
-        Assert.Equal(originalMember.User.Id, recordMember.User.Id);
-        Assert.Equal(originalMember.User.Name, recordMember.User.Name);
+        Assert.Equal(originalMember.User.Id, recordMember.UserId);
         Assert.Equal(originalMember.Role, recordMember.Role);
+        Assert.Null(recordMember.User);
     }
 
     [Fact]
-    public void ProjectRecord_RoundTrip_RestoresTheSameDomainValues()
+    public void ProjectRecord_WithLoadedNavigations_RestoresDomainValues()
     {
         var original = CreateInternalProject();
-
         var record = original.Adapt<ProjectRecord>();
+        record.Owner = original.Owner.Adapt<UserKeyRecord>();
+        var originalMember = Assert.Single(original.Access.Members);
+        var recordMember = Assert.Single(record.Access.Members);
+        recordMember.User = originalMember.User.Adapt<UserKeyRecord>();
         var restored = record.Adapt<Project>();
 
         Assert.NotSame(original, restored);
-
         Assert.Equal(original.Key.Id, restored.Key.Id);
         Assert.Equal(original.Key.Name, restored.Key.Name);
         Assert.Equal(original.Owner.Id, restored.Owner.Id);
@@ -52,7 +54,6 @@ public sealed class RepositoryMappingTests
         Assert.Equal(original.CreatedAt, restored.CreatedAt);
         Assert.Equal(original.Access.Visibility, restored.Access.Visibility);
 
-        var originalMember = Assert.Single(original.Access.Members);
         var restoredMember = Assert.Single(restored.Access.Members);
 
         Assert.Equal(originalMember.User.Id, restoredMember.User.Id);

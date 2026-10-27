@@ -1,86 +1,143 @@
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
+using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
-using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
-using Mapster;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
+using EventRelay.ControlPlaneService.Repository.Repositories;
+using EventRelay.ControlPlaneService.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
-using Testcontainers.PostgreSql;
 
 namespace EventRelay.ControlPlaneService.Tests.Integration.ProjectTests;
 
-public sealed class ProjectPersistenceTests
+public sealed class ProjectPersistenceTests(CreatePostgresContainer fixture)
+    : IClassFixture<CreatePostgresContainer>
 {
-    [Fact]
-    public async Task Project_CanBeSavedAndLoaded()
+    private ControlPlaneDbContext CreateDbContext()
     {
-        await using var postgres =
-            new PostgreSqlBuilder("postgres:17-alpine")
-                .Build();
+        var options = new DbContextOptionsBuilder<ControlPlaneDbContext>()
+            .UseNpgsql(fixture.ConnectionString)
+            .Options;
 
-        await postgres.StartAsync();
+        return new ControlPlaneDbContext(options);
+    }
 
-        var options =
-            new DbContextOptionsBuilder<ControlPlaneDbContext>()
-                .UseNpgsql(postgres.GetConnectionString())
-                .Options;
+    private static UserRecord CreateUserRecord(UserKey user) => new()
+    {
+        Id = user.Id,
+        Name = user.Name,
+        Issuer = "test",
+        Subject = user.Id.ToString()
+    };
 
+    [Fact]
+    public async Task Project_Relationships_CanBeLoadedIndividually()
+    {
+        var owner = new UserKey(Guid.CreateVersion7(), "TestOwner");
 
-        await using (var db = new ControlPlaneDbContext(options))
+        var project = new Project(new ProjectKey($"Debug-{Guid.NewGuid():N}"), owner);
+
+        await using (var db = CreateDbContext())
         {
-            await RelationalDatabaseFacadeExtensions.MigrateAsync(db.Database);
+            db.Users.Add(CreateUserRecord(owner));
+            await db.SaveChangesAsync();
 
-            var applied = await RelationalDatabaseFacadeExtensions.GetAppliedMigrationsAsync(db.Database);
-            Assert.NotEmpty((System.Collections.IEnumerable)applied);
+            var repository = new ProjectRepository(db);
 
-            var pending = await RelationalDatabaseFacadeExtensions.GetPendingMigrationsAsync(db.Database);
-            Assert.Empty((System.Collections.IEnumerable)pending);
-        }
-        var owner = new UserKey("TestOwner");
-
-        var original = new Project(
-            new ProjectKey("MyStore"),
-            owner)
-        {
-            Description = "Online shop"
-        };
-
-        var record = new ProjectRecord
-        {
-            Id = original.Key.Id,
-            Name = original.Key.Name,
-            Description = original.Description
-        };
-
-        await using (var db = new Infrastructure.Persistence.ControlPlaneDbContext((DbContextOptions<Infrastructure.Persistence.ControlPlaneDbContext>)options))
-        {
-            db.Projects.Add(record);
-
+            await repository.AddAsync(project, CancellationToken.None);
             await db.SaveChangesAsync();
         }
 
-        ProjectRecord? loadedRecord;
-
-        await using (var db = new Infrastructure.Persistence.ControlPlaneDbContext((DbContextOptions<Infrastructure.Persistence.ControlPlaneDbContext>)options))
+        await using (var db = CreateDbContext())
         {
-            loadedRecord = await db.Projects
+            var projectId = project.Key.Id;
+
+            var projectExists = await db.Projects.AnyAsync(x => x.Id == projectId);
+
+            Assert.True(projectExists, "CHECK 1 FAILED: Project was not persisted.");
+
+            var fullUser = await db.Users
                 .AsNoTracking()
-                .SingleOrDefaultAsync(
-                    x => x.Id == original.Key.Id);
+                .SingleOrDefaultAsync(x => x.Id == owner.Id);
+
+            Assert.NotNull(fullUser);
+            Assert.Equal(owner.Name, fullUser.Name);
+
+            var userKeyQuery = db.Set<UserKeyRecord>()
+                .AsNoTracking()
+                .Where(x => x.Id == owner.Id);
+
+            var userKeySql = userKeyQuery.ToQueryString();
+
+            var userKey = await userKeyQuery.SingleOrDefaultAsync();
+
+            Assert.True(userKey is not null,
+                $"CHECK 3 FAILED: UserKeyRecord not found.\n" +
+                $"SQL:\n{userKeySql}");
+
+            Assert.True(userKey.Name == owner.Name,
+                $"CHECK 3 FAILED: UserKeyRecord.Name is incorrect.\n" +
+                $"Expected: '{owner.Name}'\n" +
+                $"Actual: '{userKey.Name}'\n" +
+                $"SQL:\n{userKeySql}");
+
+            var accessExists = await db.Set<ProjectAccessRecord>()
+                .AnyAsync(x => x.ProjectId == projectId);
+
+            Assert.True(accessExists, "CHECK 4 FAILED: ProjectAccessRecord not persisted.");
+
+            var projectRecord = await db.Projects
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == projectId);
+
+            Assert.NotNull(projectRecord);
+            Assert.Equal(owner.Id, projectRecord.OwnerId);
+
+            var ownerQuery = db.Projects
+                .AsNoTracking()
+                .Include(x => x.Owner)
+                .Where(x => x.Id == projectId);
+
+            var ownerSql = ownerQuery.ToQueryString();
+
+            var withOwner = await ownerQuery.SingleOrDefaultAsync();
+
+            Assert.True(
+                withOwner is not null,
+                $"CHECK 6 FAILED: Project with Owner not found.\n" +
+                $"SQL:\n{ownerSql}");
+            Assert.NotNull(withOwner.Owner);
+            Assert.True(
+                withOwner.Owner.Name == owner.Name,
+                $"CHECK 6 FAILED: Owner navigation has wrong Name.\n" +
+                $"Expected: '{owner.Name}'\n" +
+                $"Actual: '{withOwner.Owner.Name}'\n" +
+                $"SQL:\n{ownerSql}");
+
+            var withAccess = await db.Projects
+                .AsNoTracking()
+                .Include(x => x.Access)
+                .SingleOrDefaultAsync(x => x.Id == projectId);
+
+            Assert.NotNull(withAccess);
+            Assert.NotNull(withAccess.Access);
+            Assert.Equal(ProjectVisibility.Private, withAccess.Access.Visibility);
+
+            var repository = new ProjectRepository(db);
+
+            var loaded = await repository.GetByIdAsync(projectId, CancellationToken.None);
+
+            Assert.NotNull(loaded);
+            Assert.Equal(owner.Id, loaded.Owner.Id);
+            Assert.True(
+                loaded.Owner.Name == owner.Name,
+                $"CHECK 9 FAILED: Domain Project.Owner.Name is wrong.\n" +
+                $"Expected: '{owner.Name}'\n" +
+                $"Actual: '{loaded.Owner.Name}'");
+            Assert.Equal(project.Key.Id, loaded.Key.Id);
+            Assert.Equal(project.Key.Name, loaded.Key.Name);
+            Assert.Equal(ProjectVisibility.Private, loaded.Access.Visibility);
+            Assert.Empty(loaded.Access.Members);
         }
-
-        Assert.NotNull(loadedRecord);
-
-        var loaded = new Project(
-            new ProjectKey(loadedRecord.Id, loadedRecord.Name),
-            loadedRecord.Owner.Adapt<UserKey>())
-        {
-            Description = loadedRecord.Description
-        };
-
-        Assert.Equal(original.Key.Id, loaded.Key.Id);
-        Assert.Equal(original.Key.Name, loaded.Key.Name);
-        Assert.Equal(original.Description, loaded.Description);
-
-        Assert.True(original.Key.Equals(loaded.Key));
     }
 }

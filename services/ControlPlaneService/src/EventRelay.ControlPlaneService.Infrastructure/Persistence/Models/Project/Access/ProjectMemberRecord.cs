@@ -5,7 +5,8 @@ namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Proje
 
 public sealed record ProjectMemberRecord
 {
+    public Guid ProjectId { get; set; }
+    public Guid UserId { get; set; }
     public UserKeyRecord User { get; set; } = null!;
-
     public ProjectRole Role { get; set; }
 }

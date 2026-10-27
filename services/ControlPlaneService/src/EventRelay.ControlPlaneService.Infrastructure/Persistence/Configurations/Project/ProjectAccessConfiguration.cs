@@ -19,14 +19,10 @@ public sealed class ProjectAccessConfiguration : IEntityTypeConfiguration<Projec
             .HasMaxLength(20)
             .IsRequired();
 
-        builder.ComplexCollection(x => x.Members, members =>
-        {
-            members.ToJson("Members");
-
-            members.Property(x => x.Role)
-                .HasConversion<string>();
-
-            members.ComplexProperty(x => x.User);
-        });
+        builder.HasMany(x => x.Members)
+            .WithOne()
+            .HasForeignKey(x => x.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired();
     }
 }
