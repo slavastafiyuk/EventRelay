@@ -1,6 +1,5 @@
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access;
-using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -32,11 +31,7 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectRecor
             .HasColumnType("timestamp with time zone")
             .IsRequired();
 
-        // Owner is a UserKeyRecord populated by the repository,
-        // not an EF Core navigation.
-        builder.Ignore(x => x.Owner);
-
-        builder.HasOne<UserRecord>()
+        builder.HasOne(x => x.Owner)
             .WithMany()
             .HasForeignKey(x => x.OwnerId)
             .OnDelete(DeleteBehavior.Restrict)
