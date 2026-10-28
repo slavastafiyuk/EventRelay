@@ -33,6 +33,9 @@ public sealed class ProjectService(
             id,
             cancellationToken);
 
+        if (project is null)
+            return null;
+
         var user = currentUser.UserKey
             ?? throw new InvalidOperationException("Current user is not initialized.");
 
