@@ -1,18 +1,23 @@
 using System.Net;
 using System.Text.Json;
+using EventRelay.ControlPlaneService.Tests.Helpers;
 
 namespace EventRelay.ControlPlaneService.Tests.Integration.OpenApi;
 
-public sealed class OpenApiIntegrationTests
+public sealed class OpenApiIntegrationTests(CreatePostgresContainer postgres)
+    : IClassFixture<CreatePostgresContainer>
 {
-    private readonly HttpClient _client = new()
+    private readonly HttpClient _client = postgres.Client;
+
+    [Fact]
+    public async Task OpenApiDocument_ShouldBeAvailable()
     {
-        BaseAddress = new Uri("http://localhost:5000")
-    };
+        using var response = await _client.GetAsync("/openapi/v1.json");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 
     [Theory]
-    [InlineData("/docs/specs/controlplane.json", "/api/projects")]
-    [InlineData("/docs/specs/events.json", "/api/events/ping")]
+    [InlineData("/openapi/v1.json", "/api/projects")]
     public async Task OpenApi_ReturnsValidDocument(string url, string endpoint)
     {
         using var response = await _client.GetAsync(url);
@@ -24,20 +29,15 @@ public sealed class OpenApiIntegrationTests
 
         var root = json.RootElement;
 
-        Assert.StartsWith(
-            "3.", root.GetProperty("openapi").GetString());
-
-        Assert.True(
-            root.GetProperty("paths")
-                .TryGetProperty(endpoint, out _));
+        Assert.StartsWith("3.", root.GetProperty("openapi").GetString());
+        Assert.True(root.GetProperty("paths").TryGetProperty(endpoint, out _));
     }
 
     [Fact]
     public async Task ProtectedEndpoints_RequireOAuth2()
     {
         using var json = JsonDocument.Parse(
-            await _client.GetStringAsync(
-                "/docs/specs/controlplane.json"));
+            await _client.GetStringAsync("/openapi/v1.json"));
 
         var root = json.RootElement;
 
@@ -45,12 +45,10 @@ public sealed class OpenApiIntegrationTests
             .GetProperty("securitySchemes")
             .GetProperty("OAuth2");
 
-        Assert.Equal("oauth2",
-            scheme.GetProperty("type").GetString());
+        Assert.Equal("oauth2", scheme.GetProperty("type").GetString());
 
-        Assert.True(
-            scheme.GetProperty("flows")
-                .TryGetProperty("authorizationCode", out _));
+        Assert.True(scheme.GetProperty("flows")
+            .TryGetProperty("authorizationCode", out _));
 
         var paths = root.GetProperty("paths");
 
@@ -62,8 +60,7 @@ public sealed class OpenApiIntegrationTests
         {
             Assert.Contains(
                 operation.GetProperty("security").EnumerateArray(),
-                requirement => requirement.TryGetProperty(
-                    "OAuth2", out _));
+                requirement => requirement.TryGetProperty("OAuth2", out _));
         }
     }
 }
