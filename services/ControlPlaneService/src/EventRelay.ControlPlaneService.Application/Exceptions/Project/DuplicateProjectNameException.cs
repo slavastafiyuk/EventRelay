@@ -1,4 +1,4 @@
-namespace EventRelay.ControlPlaneService.Application.Exceptions;
+namespace EventRelay.ControlPlaneService.Application.Exceptions.Project;
 
 public sealed class DuplicateProjectNameException : Exception
 {

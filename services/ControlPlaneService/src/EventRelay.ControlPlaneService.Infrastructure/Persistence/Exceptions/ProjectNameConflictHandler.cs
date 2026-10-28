@@ -1,4 +1,4 @@
-using EventRelay.ControlPlaneService.Application.Exceptions;
+using EventRelay.ControlPlaneService.Application.Exceptions.Project;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Exceptions.Abstraction;
 using Microsoft.EntityFrameworkCore;
 

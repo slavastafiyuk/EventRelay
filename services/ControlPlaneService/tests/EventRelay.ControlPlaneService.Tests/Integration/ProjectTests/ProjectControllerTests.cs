@@ -182,4 +182,28 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [Fact]
+    public async Task GetById_AsDifferentUser_Returns403()
+    {
+        var dto = new ProjectCreateDTO
+        {
+            Name = $"Private-{Guid.NewGuid():N}"
+        };
+
+        using var createResponse = await PostAsUserAsync(dto);
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var created = await createResponse.Content.ReadFromJsonAsync<ProjectKeyDTO>();
+        Assert.NotNull(created);
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/projects/{created.Id}");
+
+        request.Headers.Add("X-Test-User", "user-b");
+
+        using var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
 }
