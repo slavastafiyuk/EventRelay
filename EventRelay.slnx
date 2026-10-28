@@ -18,6 +18,7 @@
   </Folder>
 
   <Folder Name="/Gateway/">
+    <Project Path="gateway/EventRelay.Gateway.Tests/EventRelay.Gateway.Tests.csproj" />
     <Project Path="gateway/EventRelay.Gateway/EventRelay.Gateway.csproj" />
   </Folder>
 
