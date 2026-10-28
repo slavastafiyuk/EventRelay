@@ -13,7 +13,8 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "redirectUris": [
-        "http://localhost:5000/scalar/*"
+        "http://localhost:5000/scalar/",
+        "http://localhost:5000/scalar/oauth-test"
       ],
       "webOrigins": [
         "http://localhost:5000"
@@ -37,7 +38,7 @@
   ],
   "users": [
     {
-      "username": "eventrelay-dev",
+      "username": "developer",
       "enabled": true,
       "email": "dev@eventrelay.local",
       "emailVerified": true,
