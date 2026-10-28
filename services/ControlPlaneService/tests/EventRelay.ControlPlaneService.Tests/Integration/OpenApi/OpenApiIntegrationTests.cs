@@ -1,23 +1,19 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
+using EventRelay.ControlPlaneService.Tests.Helpers;
 
 namespace EventRelay.ControlPlaneService.Tests.Integration.OpenApi;
 
-public sealed class OpenApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class OpenApiIntegrationTests(CreatePostgresContainer postgres)
+    : IClassFixture<CreatePostgresContainer>
 {
-    private readonly HttpClient _client;
-
-    public OpenApiIntegrationTests(WebApplicationFactory<Program> factory)
-    {
-        _client = factory.CreateClient();
-    }
+    private readonly HttpClient _client = postgres.Client;
 
     [Fact]
     public async Task OpenApiDocument_ShouldBeAvailable()
     {
-        var response = await _client.GetAsync("/openapi/v1.json");
-        response.EnsureSuccessStatusCode();
+        using var response = await _client.GetAsync("/openapi/v1.json");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Theory]
@@ -33,18 +29,15 @@ public sealed class OpenApiIntegrationTests : IClassFixture<WebApplicationFactor
 
         var root = json.RootElement;
 
-        Assert.StartsWith(
-            "3.", root.GetProperty("openapi").GetString());
-
-        Assert.True(
-            root.GetProperty("paths")
-                .TryGetProperty(endpoint, out _));
+        Assert.StartsWith("3.", root.GetProperty("openapi").GetString());
+        Assert.True(root.GetProperty("paths").TryGetProperty(endpoint, out _));
     }
 
     [Fact]
     public async Task ProtectedEndpoints_RequireOAuth2()
     {
-        using var json = JsonDocument.Parse(await _client.GetStringAsync("/openapi/v1.json"));
+        using var json = JsonDocument.Parse(
+            await _client.GetStringAsync("/openapi/v1.json"));
 
         var root = json.RootElement;
 
@@ -52,12 +45,10 @@ public sealed class OpenApiIntegrationTests : IClassFixture<WebApplicationFactor
             .GetProperty("securitySchemes")
             .GetProperty("OAuth2");
 
-        Assert.Equal("oauth2",
-            scheme.GetProperty("type").GetString());
+        Assert.Equal("oauth2", scheme.GetProperty("type").GetString());
 
-        Assert.True(
-            scheme.GetProperty("flows")
-                .TryGetProperty("authorizationCode", out _));
+        Assert.True(scheme.GetProperty("flows")
+            .TryGetProperty("authorizationCode", out _));
 
         var paths = root.GetProperty("paths");
 
@@ -69,8 +60,7 @@ public sealed class OpenApiIntegrationTests : IClassFixture<WebApplicationFactor
         {
             Assert.Contains(
                 operation.GetProperty("security").EnumerateArray(),
-                requirement => requirement.TryGetProperty(
-                    "OAuth2", out _));
+                requirement => requirement.TryGetProperty("OAuth2", out _));
         }
     }
 }
