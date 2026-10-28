@@ -3,6 +3,7 @@
     <File Path=".dockerignore" />
     <File Path=".editorconfig" />
     <File Path=".env.example" />
+    <File Path=".github/workflows/ci.yml" />
     <File Path=".gitignore" />
     <File Path="docker-compose.yml" />
     <File Path="README.md" />
@@ -32,10 +33,8 @@
   <Folder Name="/Services/EventService/">
     <Project Path="services/EventService/src/EventRelay.EventService/EventRelay.EventService.csproj" />
   </Folder>
-  <Folder Name="/Infra/" />
-  <Folder Name="/Infra/Local/" />
-  <Folder Name="/Infra/Local/Keycloack/">
-    <File Path="eventrelay-realm.json" />
+  <Folder Name="/Infra/">
+    <File Path="infra/local/keycloak/eventrelay-realm.json" />
   </Folder>
   <Folder Name="/Services/" />
 

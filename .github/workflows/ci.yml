@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore EventRelay.slnx
+
+      - name: Build
+        run: dotnet build EventRelay.slnx --no-restore --configuration Release
+
+      - name: Install Playwright Chromium
+        run: |
+          pwsh services/ControlPlaneService/tests/EventRelay.ControlPlaneService.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run all tests
+        run: dotnet test EventRelay.slnx --no-build --configuration Release --logger "console;verbosity=normal"

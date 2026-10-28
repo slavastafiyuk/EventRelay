@@ -1,18 +1,27 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace EventRelay.ControlPlaneService.Tests.Integration.OpenApi;
 
-public sealed class OpenApiIntegrationTests
+public sealed class OpenApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly HttpClient _client = new()
+    private readonly HttpClient _client;
+
+    public OpenApiIntegrationTests(WebApplicationFactory<Program> factory)
     {
-        BaseAddress = new Uri("http://localhost:5000")
-    };
+        _client = factory.CreateClient();
+    }
+
+    [Fact]
+    public async Task OpenApiDocument_ShouldBeAvailable()
+    {
+        var response = await _client.GetAsync("/openapi/v1.json");
+        response.EnsureSuccessStatusCode();
+    }
 
     [Theory]
-    [InlineData("/docs/specs/controlplane.json", "/api/projects")]
-    [InlineData("/docs/specs/events.json", "/api/events/ping")]
+    [InlineData("/openapi/v1.json", "/api/projects")]
     public async Task OpenApi_ReturnsValidDocument(string url, string endpoint)
     {
         using var response = await _client.GetAsync(url);
@@ -35,9 +44,7 @@ public sealed class OpenApiIntegrationTests
     [Fact]
     public async Task ProtectedEndpoints_RequireOAuth2()
     {
-        using var json = JsonDocument.Parse(
-            await _client.GetStringAsync(
-                "/docs/specs/controlplane.json"));
+        using var json = JsonDocument.Parse(await _client.GetStringAsync("/openapi/v1.json"));
 
         var root = json.RootElement;
 
