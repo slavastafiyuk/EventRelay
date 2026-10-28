@@ -1,13 +1,16 @@
 using CommunityToolkit.Diagnostics;
+using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Application.Abstractions.Persistence;
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
+using EventRelay.ControlPlaneService.Application.Exceptions;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 
 namespace EventRelay.ControlPlaneService.Application.Services;
 
 public sealed class ProjectService(
     IProjectRepository repository,
-    IUnitOfWork unitOfWork) : IProjectService
+    IUnitOfWork unitOfWork,
+    ICurrentUser currentUser) : IProjectService
 {
     public async Task<ProjectKey> CreateAsync(Project project, CancellationToken cancellationToken)
     {
@@ -29,6 +32,12 @@ public sealed class ProjectService(
         var project = await repository.GetByIdAsync(
             id,
             cancellationToken);
+
+        var user = currentUser.UserKey
+            ?? throw new InvalidOperationException("Current user is not initialized.");
+
+        if (!project.CanRead(user))
+            throw new ProjectAccessDeniedException();
 
         return project;
     }

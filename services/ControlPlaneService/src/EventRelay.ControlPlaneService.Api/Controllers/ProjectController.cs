@@ -1,4 +1,5 @@
 using EventRelay.ControlPlaneService.Application.Exceptions;
+using EventRelay.ControlPlaneService.Application.Exceptions.Project;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
 using Microsoft.AspNetCore.Authorization;
@@ -53,18 +54,27 @@ public sealed class ProjectController(
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ProjectDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ProjectDTO>> GetById(
     Guid id,
     CancellationToken cancellationToken)
     {
-        var project = await projectHandler.GetByIdAsync(
+        try
+        {
+            var project = await projectHandler.GetByIdAsync(
             id,
             cancellationToken);
 
-        if (project is null)
-            return NotFound();
+            if (project is null)
+                return NotFound();
 
-        return Ok(project);
+            return Ok(project);
+        }
+        catch (ProjectAccessDeniedException)
+        {
+            return Forbid();
+        }
     }
 }
