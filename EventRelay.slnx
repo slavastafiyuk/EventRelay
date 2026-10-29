@@ -29,6 +29,7 @@
     <Project Path="services/ControlPlaneService/src/EventRelay.ControlPlaneService.Infrastructure/EventRelay.ControlPlaneService.Infrastructure.csproj" />
     <Project Path="services/ControlPlaneService/src/EventRelay.ControlPlaneService.Presentation/EventRelay.ControlPlaneService.Presentation.csproj" />
     <Project Path="services/ControlPlaneService/src/EventRelay.ControlPlaneService.Repository/EventRelay.ControlPlaneService.Repository.csproj" />
+	<Project Path="services/ControlPlaneService/tests/EventRelay.ControlPlaneService.Tests/EventRelay.ControlPlaneService.Tests.csproj" />
   </Folder>
 
   <Folder Name="/Services/EventService/">
@@ -43,12 +44,7 @@
     <Project Path="services/DeliveryService/src/EventRelay.DeliveryService/EventRelay.DeliveryService.csproj" />
   </Folder>
   
-  <Folder Name="/Tests/" />
-  
-  <Folder Name="/Tests/ControlPlaneService/">
-    <Project Path="services/ControlPlaneService/tests/EventRelay.ControlPlaneService.Tests/EventRelay.ControlPlaneService.Tests.csproj" />
-  </Folder>
-  <Folder Name="/tools/">
+  <Folder Name="/Tools/">
     <Project Path="MigrationManager/MigrationManager.csproj" Id="e2bad8d0-dc20-4489-9289-0e7248a67911" />
   </Folder>
 </Solution>
