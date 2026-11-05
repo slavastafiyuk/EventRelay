@@ -1,35 +1,99 @@
+
 name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
+      # 1. Checkout repository
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      # 2. Configure .NET
+      - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
+      # 3. Restore and build once
       - name: Restore
         run: dotnet restore EventRelay.slnx
 
       - name: Build
         run: dotnet build EventRelay.slnx --no-restore --configuration Release
 
+      # 4. Install headless Chromium for Playwright
       - name: Install Playwright Chromium
         run: |
-          pwsh services/ControlPlaneService/tests/EventRelay.ControlPlaneService.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+          pwsh services/ControlPlaneService/tests/EventRelay.ControlPlaneService.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps --only-shell chromium
 
-      - name: Run tests (excluding Docker Compose E2E)
-        run: dotnet test EventRelay.slnx --no-build --filter "Category!=ComposeE2E" --configuration Release --logger "console;verbosity=normal"
+      # 5. Unit, integration and Keycloak Testcontainers E2E
+      - name: Run tests
+        run: |
+          dotnet test EventRelay.slnx \
+            --no-build \
+            --configuration Release \
+            --filter "Category!=ComposeE2E" \
+            --logger "console;verbosity=normal"
+
+      # 6. Generate temporary local credentials
+      - name: Configure Docker environment
+        shell: bash
+        run: |
+          {
+            echo "ASPNETCORE_ENVIRONMENT=Development"
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
+            echo "KEYCLOAK_ADMIN_USERNAME=admin"
+            echo "KEYCLOAK_ADMIN_PASSWORD=$(openssl rand -hex 24)"
+            echo "KEYCLOAK_DEV_USER_PASSWORD=$(openssl rand -hex 24)"
+          } > .env
+
+          chmod 600 .env
+
+      # 7. Start the full application
+      - name: Start Docker Compose
+        run: docker compose up --build -d
+
+      # 8. Run real cross-service E2E tests
+      - name: Run Docker Compose E2E tests
+        run: |
+          dotnet test tests/EventRelay.E2E.Tests/EventRelay.E2E.Tests.csproj \
+            --no-build \
+            --configuration Release \
+            --filter "Category=ComposeE2E" \
+            --logger "console;verbosity=normal"
+
+      # 9. Diagnostics on failure
+      - name: Show Docker logs on failure
+        if: failure()
+        run: |
+          if [ -f .env ]; then
+            docker compose ps -a
+            docker compose logs --no-color --tail=100
+          fi
+
+      # 10. Always clean up
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f .env ]; then
+            docker compose down --volumes --remove-orphans
+            rm -f .env
+          fi
