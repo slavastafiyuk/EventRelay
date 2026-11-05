@@ -4,6 +4,7 @@
     <File Path=".editorconfig" />
     <File Path=".env.example" />
     <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/compose-e2e.yml" />
     <File Path=".gitignore" />
     <File Path="docker-compose.yml" />
     <File Path="README.md" />
@@ -29,7 +30,7 @@
     <Project Path="services/ControlPlaneService/src/EventRelay.ControlPlaneService.Infrastructure/EventRelay.ControlPlaneService.Infrastructure.csproj" />
     <Project Path="services/ControlPlaneService/src/EventRelay.ControlPlaneService.Presentation/EventRelay.ControlPlaneService.Presentation.csproj" />
     <Project Path="services/ControlPlaneService/src/EventRelay.ControlPlaneService.Repository/EventRelay.ControlPlaneService.Repository.csproj" />
-	<Project Path="services/ControlPlaneService/tests/EventRelay.ControlPlaneService.Tests/EventRelay.ControlPlaneService.Tests.csproj" />
+    <Project Path="services/ControlPlaneService/tests/EventRelay.ControlPlaneService.Tests/EventRelay.ControlPlaneService.Tests.csproj" />
   </Folder>
 
   <Folder Name="/Services/EventService/">
@@ -42,6 +43,9 @@
 
   <Folder Name="/Services/DeliveryService/">
     <Project Path="services/DeliveryService/src/EventRelay.DeliveryService/EventRelay.DeliveryService.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/EventRelay.E2E.Tests/EventRelay.E2E.Tests.csproj" />
   </Folder>
   
   <Folder Name="/Tools/">
