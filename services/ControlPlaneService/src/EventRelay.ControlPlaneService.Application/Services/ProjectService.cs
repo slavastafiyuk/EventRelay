@@ -4,6 +4,7 @@ using EventRelay.ControlPlaneService.Application.Abstractions.Persistence;
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 using EventRelay.ControlPlaneService.Application.Exceptions;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
+using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 
 namespace EventRelay.ControlPlaneService.Application.Services;
 
@@ -27,19 +28,32 @@ public sealed class ProjectService(
         return project.Key;
     }
 
-    public async Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public Task<Project?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var project = await repository.GetByIdAsync(
+        return GetAuthorizedAsync(
             id,
+            ProjectPermission.Read,
+            cancellationToken);
+    }
+
+    private async Task<Project?> GetAuthorizedAsync(
+        Guid projectId,
+        ProjectPermission permission,
+        CancellationToken cancellationToken)
+    {
+        var user = currentUser.UserKey
+            ?? throw new InvalidOperationException("Current user is not initialized.");
+
+        var project = await repository.GetByIdAsync(
+            projectId,
             cancellationToken);
 
         if (project is null)
             return null;
 
-        var user = currentUser.UserKey
-            ?? throw new InvalidOperationException("Current user is not initialized.");
-
-        if (!project.CanRead(user))
+        if (!project.HasPermission(user, permission))
             throw new ProjectAccessDeniedException();
 
         return project;

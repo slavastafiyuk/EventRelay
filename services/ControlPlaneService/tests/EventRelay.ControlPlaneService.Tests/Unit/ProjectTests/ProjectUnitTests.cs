@@ -7,28 +7,60 @@ namespace EventRelay.ControlPlaneService.Tests.Unit.ProjectTests;
 public sealed class ProjectUnitTests
 {
     [Fact]
-    public void CanRead_RespectsProjectVisibility()
+    public void HasPermission_Read_RespectsProjectVisibility()
     {
         var owner = new UserKey(Guid.NewGuid(), "owner");
         var member = new UserKey(Guid.NewGuid(), "member");
         var outsider = new UserKey(Guid.NewGuid(), "outsider");
         var project = new Project(new ProjectKey("MyProject"), owner);
 
-        Assert.True(project.CanRead(owner));
-        Assert.False(project.CanRead(member));
-        Assert.False(project.CanRead(outsider));
+        Assert.True(project.HasPermission(owner, ProjectPermission.Read));
+        Assert.False(project.HasPermission(member, ProjectPermission.Read));
+        Assert.False(project.HasPermission(outsider, ProjectPermission.Read));
 
         project.ChangeVisibility(ProjectVisibility.Internal);
         project.AddMember(member, ProjectRole.Viewer);
 
-        Assert.True(project.CanRead(owner));
-        Assert.True(project.CanRead(member));
-        Assert.False(project.CanRead(outsider));
+        Assert.True(project.HasPermission(owner, ProjectPermission.Read));
+        Assert.True(project.HasPermission(member, ProjectPermission.Read));
+        Assert.False(project.HasPermission(outsider, ProjectPermission.Read));
 
         project.ChangeVisibility(ProjectVisibility.Public);
 
-        Assert.True(project.CanRead(owner));
-        Assert.True(project.CanRead(member));
-        Assert.True(project.CanRead(outsider));
+        Assert.True(project.HasPermission(owner, ProjectPermission.Read));
+        Assert.True(project.HasPermission(member, ProjectPermission.Read));
+        Assert.True(project.HasPermission(outsider, ProjectPermission.Read));
     }
+
+
+    [Fact]
+    public void ManageApiKeys_IsAllowedOnlyForOwner()
+    {
+        var owner = new UserKey(Guid.NewGuid(), "owner");
+        var editor = new UserKey(Guid.NewGuid(), "editor");
+        var viewer = new UserKey(Guid.NewGuid(), "viewer");
+        var outsider = new UserKey(Guid.NewGuid(), "outsider");
+
+        var project = new Project(
+            new ProjectKey("TestProject"),
+            owner);
+
+        project.ChangeVisibility(ProjectVisibility.Internal);
+
+        project.AddMember(editor, ProjectRole.Editor);
+        project.AddMember(viewer, ProjectRole.Viewer);
+
+        Assert.True(project.HasPermission(
+            owner, ProjectPermission.ManageApiKeys));
+
+        Assert.False(project.HasPermission(
+            editor, ProjectPermission.ManageApiKeys));
+
+        Assert.False(project.HasPermission(
+            viewer, ProjectPermission.ManageApiKeys));
+
+        Assert.False(project.HasPermission(
+            outsider, ProjectPermission.ManageApiKeys));
+    }
+
 }
