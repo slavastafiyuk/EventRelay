@@ -31,5 +31,5 @@ jobs:
         run: |
           pwsh services/ControlPlaneService/tests/EventRelay.ControlPlaneService.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
-      - name: Run all tests
-        run: dotnet test EventRelay.slnx --no-build --configuration Release --logger "console;verbosity=normal"
+      - name: Run tests (excluding Docker Compose E2E)
+        run: dotnet test EventRelay.slnx --no-build --filter "Category!=ComposeE2E" --configuration Release --logger "console;verbosity=normal"

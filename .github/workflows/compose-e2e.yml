@@ -1,0 +1,49 @@
+
+name: Docker Compose Authentication E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compose-authentication-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Create development credentials
+        shell: bash
+        run: echo "ASPNETCORE_ENVIRONMENT=Development" > .env; echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)" >> .env; echo "KEYCLOAK_ADMIN_USERNAME=admin" >> .env; echo "KEYCLOAK_ADMIN_PASSWORD=$(openssl rand -hex 24)" >> .env; echo "KEYCLOAK_DEV_USER_PASSWORD=$(openssl rand -hex 24)" >> .env
+
+      - name: Restore
+        run: dotnet restore EventRelay.slnx
+
+      - name: Build
+        run: dotnet build EventRelay.slnx --no-restore --configuration Release
+
+      - name: Install Playwright Chromium
+        run: pwsh tests/EventRelay.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Start Docker Compose
+        run: docker compose up --build -d
+
+      - name: Run Docker Compose E2E tests
+        run: dotnet test tests/EventRelay.E2E.Tests/EventRelay.E2E.Tests.csproj --no-build --configuration Release --filter "Category=ComposeE2E" --logger "console;verbosity=normal"
+
+      - name: Show container status on failure
+        if: failure()
+        run: docker compose ps -a
+
+      - name: Stop Docker Compose
+        if: always()
+        run: docker compose down --volumes --remove-orphans
