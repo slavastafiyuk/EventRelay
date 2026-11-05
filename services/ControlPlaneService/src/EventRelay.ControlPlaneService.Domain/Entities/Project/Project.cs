@@ -11,6 +11,12 @@ public class Project
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
     public UserKey Owner { get; private set; } = null!;
     public ProjectAccess Access { get; private set; } = new();
+    private const ProjectPermission DefinedPermissions =
+        ProjectPermission.Read |
+        ProjectPermission.Update |
+        ProjectPermission.Delete |
+        ProjectPermission.ManageMembers |
+        ProjectPermission.ManageApiKeys;
 
     public void AddMember(UserKey user, ProjectRole role)
     {
@@ -26,16 +32,35 @@ public class Project
 
     public void ChangeVisibility(ProjectVisibility visibility) => Access.SetVisibility(visibility);
 
-    public bool CanRead(UserKey user)
+    public bool HasPermission(UserKey user, ProjectPermission required)
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        if (Owner.Equals(user)) return true;
+        if (required == ProjectPermission.None ||
+            (required & ~DefinedPermissions) != ProjectPermission.None)
+            return false;
 
-        if (Access.Visibility == ProjectVisibility.Public) return true;
+        if (Owner.Equals(user))
+            return true;
 
-        return Access.Visibility == ProjectVisibility.Internal
-            && Access.Members.Any(member => member.User.Equals(user));
+        if (required == ProjectPermission.Read && Access.Visibility == ProjectVisibility.Public)
+            return true;
+
+        if (Access.Visibility != ProjectVisibility.Internal)
+            return false;
+
+        var member = Access.Members.FirstOrDefault(m => m.User.Equals(user));
+
+        var granted = member?.Role switch
+        {
+            ProjectRole.Viewer => ProjectPermission.Read,
+
+            ProjectRole.Editor => ProjectPermission.Read | ProjectPermission.Update,
+
+            _ => ProjectPermission.None
+        };
+
+        return (granted & required) == required;
     }
 
     public static Project Restore(
