@@ -11,8 +11,10 @@ public sealed class ComposeStackFixture : IAsyncLifetime
     public const string ClientId = "eventrelay-scalar";
 
     public string Username => "developer";
-
     public string Password { get; private set; } = null!;
+
+    public string SecondUsername => "developer-b";
+    public string SecondPassword { get; private set; } = null!;
 
     public HttpClient Gateway { get; } = new()
     {
@@ -35,6 +37,12 @@ public sealed class ComposeStackFixture : IAsyncLifetime
                 "KEYCLOAK_DEV_USER_PASSWORD")
             ?? throw new InvalidOperationException(
                 "KEYCLOAK_DEV_USER_PASSWORD is missing.");
+
+        SecondPassword =
+            Environment.GetEnvironmentVariable(
+                "KEYCLOAK_SECOND_USER_PASSWORD")
+            ?? throw new InvalidOperationException(
+                "KEYCLOAK_SECOND_USER_PASSWORD is missing.");
 
         await WaitUntilAvailableAsync(
             Keycloak,

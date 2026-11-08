@@ -36,6 +36,7 @@
       ]
     }
   ],
+
   "users": [
     {
       "username": "developer",
@@ -52,6 +53,23 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "username": "developer-b",
+      "enabled": true,
+      "email": "dev-b@eventrelay.local",
+      "emailVerified": true,
+      "firstName": "EventRelay",
+      "lastName": "SecondDeveloper",
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_SECOND_USER_PASSWORD}",
+          "temporary": false
+        }
+      ]
     }
   ]
+
 }
