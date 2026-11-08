@@ -63,6 +63,7 @@ jobs:
             echo "KEYCLOAK_ADMIN_USERNAME=admin"
             echo "KEYCLOAK_ADMIN_PASSWORD=$(openssl rand -hex 24)"
             echo "KEYCLOAK_DEV_USER_PASSWORD=$(openssl rand -hex 24)"
+            echo "KEYCLOAK_SECOND_USER_PASSWORD=$(openssl rand -hex 24)"
           } > .env
 
           chmod 600 .env

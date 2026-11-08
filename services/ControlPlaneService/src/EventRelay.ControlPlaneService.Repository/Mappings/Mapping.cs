@@ -49,7 +49,7 @@ public sealed class Mapping : IRegister
             .Map(dest => dest.Members, src => src.Members);
 
         config.NewConfig<ProjectAccessRecord, ProjectAccess>()
-            .MapWith(src => RestoreAccess(src));
+            .MapWith(src => ToDomainAccess(src));
 
         config.NewConfig<Project, ProjectRecord>()
             .Map(dest => dest.Id, src => src.Key.Id)
@@ -84,5 +84,18 @@ public sealed class Mapping : IRegister
             record.Members?.Select(m => new ProjectMember(
                 new UserKey(m.User.Id, m.User.Name),
                 m.Role)));
+    }
+
+    private static ProjectAccess ToDomainAccess(ProjectAccessRecord record)
+    {
+        var members = record.Members?
+            .Select(member => new ProjectMember(
+                new UserKey(member.User.Id, member.User.Name),
+                member.Role))
+            .ToList();
+
+        return ProjectAccess.Restore(
+            record.Visibility,
+            members);
     }
 }

@@ -63,4 +63,23 @@ public sealed class ProjectUnitTests
             outsider, ProjectPermission.ManageApiKeys));
     }
 
+    [Theory]
+    [InlineData(ProjectPermission.Read, true)]
+    [InlineData(ProjectPermission.Update, true)]
+    [InlineData(ProjectPermission.Delete, true)]
+    [InlineData(ProjectPermission.ManageMembers, true)]
+    [InlineData(ProjectPermission.ManageApiKeys, true)]
+    public void Owner_HasEveryDefinedPermission(ProjectPermission permission, bool expected)
+    {
+        var owner = new UserKey(Guid.NewGuid(), "owner");
+
+        var project = new Project(
+            new ProjectKey("TestProject"),
+            owner);
+
+        var actual = project.HasPermission(owner, permission);
+
+        Assert.Equal(expected, actual);
+    }
+
 }

@@ -38,17 +38,13 @@ public sealed class Mapping : IRegister
         #region Project Access Mappings
 
         config.NewConfig<ProjectAccess, ProjectAccessDTO>()
-            .Map(dest => dest.Visibility,
-                 src => (ProjectVisibilityDTO)src.Visibility);
+            .MapWith(src => ToProjectAccessDTO(src));
 
         config.NewConfig<ProjectAccessDTO, ProjectAccess>()
-            .MapWith(src => ProjectAccess.Restore(
-                (ProjectVisibility)src.Visibility,
-                src.Members.Select(m => ToDomainMember(m))));
+            .MapWith(src => ToDomainAccess(src));
 
         config.NewConfig<ProjectMember, ProjectMemberDTO>()
-            .Map(dest => dest.Role,
-                 src => (ProjectRoleDTO)src.Role);
+            .MapWith(src => ToProjectMemberDTO(src));
 
         config.NewConfig<ProjectMemberDTO, ProjectMember>()
             .MapWith(src => ToDomainMember(src));
@@ -65,7 +61,12 @@ public sealed class Mapping : IRegister
         config.NewConfig<UserKeyDTO, UserKey>()
             .MapToConstructor(true);
 
-        config.NewConfig<UserKey, UserKeyDTO>();
+        config.NewConfig<UserKey, UserKeyDTO>()
+            .MapWith(src => new UserKeyDTO
+            {
+                Id = src.Id,
+                Name = src.Name
+            });
 
         #endregion User Mappings
     }
@@ -87,5 +88,32 @@ public sealed class Mapping : IRegister
             Owner = project.Owner.Adapt<UserKeyDTO>(),
             CreatedAt = project.CreatedAt
         };
+    }
+
+    private static ProjectMemberDTO ToProjectMemberDTO(ProjectMember member)
+    {
+        return new ProjectMemberDTO
+        {
+            User = member.User.Adapt<UserKeyDTO>(),
+            Role = (ProjectRoleDTO)member.Role
+        };
+    }
+
+    private static ProjectAccessDTO ToProjectAccessDTO(ProjectAccess access)
+    {
+        return new ProjectAccessDTO
+        {
+            Visibility = (ProjectVisibilityDTO)access.Visibility,
+            Members = access.Members
+                .Select(member => member.Adapt<ProjectMemberDTO>())
+                .ToList()
+        };
+    }
+
+    private static ProjectAccess ToDomainAccess(ProjectAccessDTO dto)
+    {
+        return ProjectAccess.Restore(
+            (ProjectVisibility)dto.Visibility,
+            dto.Members.Select(ToDomainMember));
     }
 }

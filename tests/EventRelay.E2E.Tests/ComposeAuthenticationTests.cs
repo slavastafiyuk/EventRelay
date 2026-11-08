@@ -1,4 +1,4 @@
-
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -14,10 +14,8 @@ public sealed class ComposeAuthenticationTests(
     ComposeStackFixture fixture)
     : IClassFixture<ComposeStackFixture>
 {
-    private const string RedirectUri =
-        "http://localhost:5000/scalar/oauth-test";
+    private const string RedirectUri = "http://localhost:5000/scalar/oauth-test";
 
-    // Test 1: A public endpoint should work through YARP.
     [Fact]
     [Trait("Category", "ComposeE2E")]
     public async Task PublicEndpoint_ThroughGateway_Returns200()
@@ -75,10 +73,8 @@ public sealed class ComposeAuthenticationTests(
     [Trait("Category", "ComposeE2E")]
     public async Task RealKeycloakLogin_CanCreateAndReadProject()
     {
-        // Step 1: Perform real OAuth2 + PKCE login.
-        var token = await LoginWithPkceAsync();
+        var token = await LoginWithPkceAsync(fixture.Username, fixture.Password);
 
-        // Step 2: Create a project through YARP.
         var projectName = $"E2E-{Guid.NewGuid():N}";
 
         using var createRequest = new HttpRequestMessage(
@@ -150,7 +146,121 @@ public sealed class ComposeAuthenticationTests(
                 .GetString());
     }
 
-    private async Task<string> LoginWithPkceAsync()
+
+    [Fact]
+    [Trait("Category", "ComposeE2E")]
+    public async Task PrivateProject_OtherAuthenticatedUser_Returns403()
+    {
+        // Arrange: authenticate two distinct Keycloak users.
+        var ownerToken = await LoginWithPkceAsync(
+            fixture.Username,
+            fixture.Password);
+
+        var outsiderToken = await LoginWithPkceAsync(
+            fixture.SecondUsername,
+            fixture.SecondPassword);
+
+        // Verify that Keycloak issued tokens for different identities.
+        var tokenHandler = new JwtSecurityTokenHandler();
+
+        var ownerSubject = tokenHandler
+            .ReadJwtToken(ownerToken)
+            .Subject;
+
+        var outsiderSubject = tokenHandler
+            .ReadJwtToken(outsiderToken)
+            .Subject;
+
+        Assert.False(string.IsNullOrWhiteSpace(ownerSubject));
+        Assert.False(string.IsNullOrWhiteSpace(outsiderSubject));
+        Assert.NotEqual(ownerSubject, outsiderSubject);
+
+        // Create a new project owned by User A.
+        var projectName = $"Authz-{Guid.NewGuid():N}";
+
+        using var createRequest = new HttpRequestMessage(
+            HttpMethod.Post,
+            "/api/projects")
+        {
+            Content = JsonContent.Create(new
+            {
+                Name = projectName,
+                Description = "Cross-user authorization E2E test"
+            })
+        };
+
+        createRequest.Headers.Authorization =
+            new AuthenticationHeaderValue(
+                "Bearer",
+                ownerToken);
+
+        using var createResponse =
+            await fixture.Gateway.SendAsync(createRequest);
+
+        var createBody =
+            await createResponse.Content.ReadAsStringAsync();
+
+        Assert.True(
+            createResponse.StatusCode == HttpStatusCode.Created,
+            $"Expected 201, received " +
+            $"{(int)createResponse.StatusCode}: {createBody}");
+
+        using var createdJson = JsonDocument.Parse(createBody);
+
+        var projectId = createdJson.RootElement
+            .GetProperty("id")
+            .GetGuid();
+
+        Assert.NotEqual(Guid.Empty, projectId);
+
+        // Act 1: the owner reads the project.
+        using var ownerRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/projects/{projectId}");
+
+        ownerRequest.Headers.Authorization =
+            new AuthenticationHeaderValue(
+                "Bearer",
+                ownerToken);
+
+        using var ownerResponse =
+            await fixture.Gateway.SendAsync(ownerRequest);
+
+        // Assert: the owner is authorized.
+        Assert.Equal(
+            HttpStatusCode.OK,
+            ownerResponse.StatusCode);
+
+        // Act 2: a different authenticated user reads it.
+        using var outsiderRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/projects/{projectId}");
+
+        outsiderRequest.Headers.Authorization =
+            new AuthenticationHeaderValue(
+                "Bearer",
+                outsiderToken);
+
+        using var outsiderResponse =
+            await fixture.Gateway.SendAsync(outsiderRequest);
+
+        // Assert: a valid JWT is not sufficient for access.
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            outsiderResponse.StatusCode);
+
+        // Act 3: an anonymous caller reads the same project.
+        using var anonymousResponse = await fixture.Gateway.GetAsync(
+            $"/api/projects/{projectId}");
+
+        // Assert: missing authentication is a different failure.
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            anonymousResponse.StatusCode);
+    }
+
+
+    private async Task<string> LoginWithPkceAsync(string username, string password)
     {
         // Generate PKCE verifier and SHA-256 challenge.
         var verifier = Base64Url(
@@ -192,12 +302,8 @@ public sealed class ComposeAuthenticationTests(
         var page = await browser.NewPageAsync();
 
         await page.GotoAsync(authorizationUrl);
-
-        await page.Locator("#username")
-            .FillAsync(fixture.Username);
-
-        await page.Locator("#password")
-            .FillAsync(fixture.Password);
+        await page.Locator("#username").FillAsync(username);
+        await page.Locator("#password").FillAsync(password);
 
         // Capture the authorization-code redirect.
         var redirectTask = page.WaitForRequestAsync(
