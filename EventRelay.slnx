@@ -3,7 +3,7 @@
     <File Path=".dockerignore" />
     <File Path=".editorconfig" />
     <File Path=".env.example" />
-    <File Path=".github/scipts/sonar-pr-report.py" />
+    <File Path=".github/scripts/sonar-pr-report.py" />
     <File Path=".github/workflows/ci.yml" />
     <File Path=".gitignore" />
     <File Path="docker-compose.yml" />

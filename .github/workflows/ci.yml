@@ -45,6 +45,7 @@ jobs:
           dotnet tool install --global dotnet-sonarscanner
           dotnet tool install --global dotnet-coverage
 
+
       # 5. Begin SonarQube analysis
       - name: SonarQube Begin
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -59,6 +60,7 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml" \
+            /d:sonar.exclusions=".github/scripts/sonar-pr-report.py" \
             /d:sonar.qualitygate.wait=true
 
       # 6. Build solution

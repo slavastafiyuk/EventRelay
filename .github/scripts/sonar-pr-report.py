@@ -167,7 +167,12 @@ lines.extend([
     "automatically fail this PR's Quality Gate._",
 ])
 
-Path("sonar-pr-report.md").write_text(
-    "\n".join(lines) + "\n",
-    encoding="utf-8",
-)
+# Generate the Markdown report
+report_content = "\n".join(lines) + "\n"
+
+# Save the report for GitHub Actions
+report_path = Path("sonar-pr-report.md")
+report_path.write_text(report_content, encoding="utf-8")
+
+print(f"SonarQube report generated: {report_path.resolve()}")
+print(f"Report size: {report_path.stat().st_size} bytes")
