@@ -108,10 +108,11 @@ jobs:
       # 11. Publish or update GitHub PR comment
       - name: Publish SonarQube PR report
         if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.sonar_report.outcome == 'success' }}
-        uses: marocchino/sticky-pull-request-comment@v3
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           header: eventrelay-sonar-report
           path: sonar-pr-report.md
+
 
       # 12. Generate temporary local credentials
       - name: Configure Docker environment
