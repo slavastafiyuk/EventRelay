@@ -1,6 +1,8 @@
+using EventRelay.ControlPlaneService.Domain.Entities.Api;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Api;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
@@ -65,6 +67,42 @@ public sealed class Mapping : IRegister
 
 
         #endregion Project Mappings
+
+        #region Project Key Mappings
+
+        config.NewConfig<ProjectKey, ProjectKeyRecord>();
+
+        config.NewConfig<ProjectKeyRecord, ProjectKey>()
+            .MapWith(src => new ProjectKey(src.Id, src.Name));
+
+        #endregion
+
+        #region Project API Mappings
+
+        config.NewConfig<ProjectApi, ProjectApiRecord>()
+            .Map(dest => dest.Id, src => src.Key.Id)
+            .Map(dest => dest.Name, src => src.Key.Name)
+            .Map(dest => dest.KeyHash, src => src.Key.KeyHash)
+            .Map(dest => dest.ProjectId, src => src.Project.Id)
+            .Map(dest => dest.CreatedByUserId, src => src.CreatedBy.Id)
+            .Map(dest => dest.RevokedByUserId,
+                src => src.RevokedBy == null
+                    ? (Guid?)null
+                    : src.RevokedBy.Id)
+            .Ignore(dest => dest.Project)
+            .Ignore(dest => dest.CreatedBy)
+            .Ignore(dest => dest.RevokedBy);
+
+        config.NewConfig<ProjectApiRecord, ProjectApi>()
+            .MapWith(src => ProjectApi.Restore(ApiKey.Restore(src.Id, src.Name, src.KeyHash),
+                src.Project.Adapt<ProjectKey>(),
+                src.CreatedBy.Adapt<UserKey>(),
+                src.CreatedAt,
+                src.RevokedBy == null ? null : src.RevokedBy.Adapt<UserKey>(),
+                src.RevokedAt));
+
+        #endregion
+
     }
 
     private static Project ToDomain(ProjectRecord record)

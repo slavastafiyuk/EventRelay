@@ -1,7 +1,9 @@
 using EventRelay.ControlPlaneService.Application.Models;
+using EventRelay.ControlPlaneService.Domain.Entities.Api;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
+using EventRelay.ControlPlaneService.Presentation.Contracts.Api;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Ping;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project.Access;
@@ -69,13 +71,25 @@ public sealed class Mapping : IRegister
             });
 
         #endregion User Mappings
+
+        #region API Mappings
+
+        config.NewConfig<ApiKey, ApiKeyDTO>()
+            .Map(dest => dest.Id, src => src.Id)
+            .Map(dest => dest.Name, src => src.Name);
+
+        config.NewConfig<ProjectApi, ProjectApiDTO>()
+            .MapWith(src => ToProjectApiDTO(src));
+
+        config.NewConfig<IssuedApi, IssuedApiDTO>();
+
+        #endregion
+
     }
 
     private static ProjectMember ToDomainMember(ProjectMemberDTO dto)
     {
-        return new ProjectMember(
-            dto.User.Adapt<UserKey>(),
-            (ProjectRole)dto.Role);
+        return new ProjectMember(dto.User.Adapt<UserKey>(), (ProjectRole)dto.Role);
     }
 
     private static ProjectDTO ToProjectDTO(Project project)
@@ -116,4 +130,25 @@ public sealed class Mapping : IRegister
             (ProjectVisibility)dto.Visibility,
             dto.Members.Select(ToDomainMember));
     }
+
+
+    private static ProjectApiDTO ToProjectApiDTO(ProjectApi api)
+    {
+        return new ProjectApiDTO
+        {
+            Key = api.Key.Adapt<ApiKeyDTO>(),
+            Project = api.Project.Adapt<ProjectKeyDTO>(),
+
+            CreatedBy = api.CreatedBy.Adapt<UserKeyDTO>(),
+
+            RevokedBy = api.RevokedBy is null
+                ? null
+                : api.RevokedBy.Adapt<UserKeyDTO>(),
+
+            CreatedAt = api.CreatedAt,
+            RevokedAt = api.RevokedAt,
+            IsActive = api.IsActive
+        };
+    }
+
 }
