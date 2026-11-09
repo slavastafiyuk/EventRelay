@@ -1,6 +1,8 @@
+using EventRelay.ControlPlaneService.Domain.Entities.Api;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Api;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
@@ -138,5 +140,95 @@ public sealed class RepositoryMappingTests
             ProjectRole.Editor);
 
         return project;
+    }
+
+
+    [Fact]
+    public void ProjectApi_MapsToRecord_WithForeignKeys()
+    {
+        var project = new ProjectKey("MyStore");
+        var creator = new UserKey("Alice");
+
+        var (api, _) = ProjectApi.Issue(
+            project, creator, "Production");
+
+        var record = api.Adapt<ProjectApiRecord>();
+
+        Assert.Equal(api.Key.Id, record.Id);
+        Assert.Equal(api.Key.Name, record.Name);
+        Assert.Equal(api.Key.KeyHash, record.KeyHash);
+        Assert.Equal(project.Id, record.ProjectId);
+        Assert.Equal(creator.Id, record.CreatedByUserId);
+        Assert.Equal(api.CreatedAt, record.CreatedAt);
+        Assert.Null(record.RevokedAt);
+        Assert.Null(record.RevokedByUserId);
+        Assert.Null(record.Project);
+        Assert.Null(record.CreatedBy);
+        Assert.Null(record.RevokedBy);
+    }
+
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ProjectApiRecord_RestoresDomain_WithCorrectLifecycle(bool revoked)
+    {
+        var project = new ProjectKey("MyStore");
+        var creator = new UserKey("Alice");
+        var revoker = new UserKey("Bob");
+
+        var (original, _) = ProjectApi.Issue(
+            project, creator, "Production");
+
+        if (revoked)
+            original.Revoke(revoker);
+
+        var record = original.Adapt<ProjectApiRecord>();
+
+        record.Project = project.Adapt<ProjectKeyRecord>();
+        record.CreatedBy = creator.Adapt<UserKeyRecord>();
+
+        if (revoked)
+            record.RevokedBy = revoker.Adapt<UserKeyRecord>();
+
+        var restored = record.Adapt<ProjectApi>();
+
+        Assert.NotSame(original, restored);
+        Assert.Equal(original.Key.Id, restored.Key.Id);
+        Assert.Equal(original.Key.Name, restored.Key.Name);
+        Assert.Equal(original.Key.KeyHash, restored.Key.KeyHash);
+        Assert.Equal(project.Id, restored.Project.Id);
+        Assert.Equal(project.Name, restored.Project.Name);
+        Assert.Equal(creator.Id, restored.CreatedBy.Id);
+        Assert.Equal(creator.Name, restored.CreatedBy.Name);
+        Assert.Equal(original.CreatedAt, restored.CreatedAt);
+        Assert.Equal(original.RevokedAt, restored.RevokedAt);
+        Assert.Equal(original.IsActive, restored.IsActive);
+
+        if (revoked)
+        {
+            Assert.NotNull(restored.RevokedBy);
+            Assert.Equal(revoker.Id, restored.RevokedBy.Id);
+            Assert.Equal(revoker.Name, restored.RevokedBy.Name);
+        }
+        else
+        {
+            Assert.Null(restored.RevokedBy);
+        }
+    }
+
+
+    [Fact]
+    public void ProjectKey_RoundTrip_PreservesIdentity()
+    {
+        var original = new ProjectKey("MyStore");
+
+        var record = original.Adapt<ProjectKeyRecord>();
+        var restored = record.Adapt<ProjectKey>();
+
+        Assert.Equal(original.Id, record.Id);
+        Assert.Equal(original.Name, record.Name);
+        Assert.Equal(original.Id, restored.Id);
+        Assert.Equal(original.Name, restored.Name);
     }
 }
