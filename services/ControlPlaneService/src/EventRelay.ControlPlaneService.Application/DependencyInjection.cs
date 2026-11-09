@@ -1,4 +1,5 @@
 using EventRelay.ControlPlaneService.Application.Abstractions;
+using EventRelay.ControlPlaneService.Application.Abstractions.Api;
 using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 using EventRelay.ControlPlaneService.Application.Abstractions.Users;
@@ -18,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<CurrentUser>();
         services.AddScoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUser>());
         services.AddScoped<ICurrentUserInitializer>(sp => sp.GetRequiredService<CurrentUser>());
+        services.AddScoped<IProjectApiService, ProjectApiService>();
 
         return services;
     }

@@ -1,3 +1,4 @@
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Api;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ public sealed class ControlPlaneDbContext(
 {
     public DbSet<ProjectRecord> Projects => Set<ProjectRecord>();
     public DbSet<UserRecord> Users => Set<UserRecord>();
+    public DbSet<ProjectApiRecord> ProjectApiKeys => Set<ProjectApiRecord>();
 
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)
