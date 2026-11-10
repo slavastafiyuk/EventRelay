@@ -48,7 +48,7 @@ def badge(label, value, color):
 
     image_url = (
         f"https://img.shields.io/badge/{segment(label)}-"
-        f"{segment(value)}-{color}?style=for-the-badge"
+        f"{segment(value)}-{color}?style=flat-square"
     )
     return f"![{safe(label)}: {safe(value)}]({image_url})"
 
@@ -145,22 +145,20 @@ lines = [
     "",
     f"**Pull request #{safe(PR_NUMBER)}** · Target: `main` · SonarQube Cloud",
     "",
-    badge("Quality Gate", gate_label, gate_color),
-    badge("New Issues", pr_count, "brightgreen" if pr_count == 0 else "red"),
-    badge("Existing Issues", main_count, "brightgreen" if main_count == 0 else "orange"),
+    # All three small badges share ONE Markdown line (also on GitHub).
+    " &nbsp; ".join([
+        badge("Quality Gate", gate_label, gate_color),
+        badge("New Issues", pr_count, "brightgreen" if pr_count == 0 else "red"),
+        badge("Existing Issues", main_count, "brightgreen" if main_count == 0 else "orange"),
+    ]),
     "",
 ]
 
+# Avoid duplicating the 'no new issues' message in a separate tip box.
 if gate_status == "ERROR":
     lines.extend([
         "> [!WARNING]",
         "> The Quality Gate failed. Review the failed conditions before merging.",
-        "",
-    ])
-elif gate_status == "OK" and pr_count == 0:
-    lines.extend([
-        "> [!TIP]",
-        "> No new open issues detected in this pull request.",
         "",
     ])
 
@@ -210,7 +208,7 @@ if pr_issues.get("issues"):
     if pr_count > LIMIT:
         lines.append(f"\n*Showing {LIMIT} of {pr_count} new issues.*")
 else:
-    lines.append("✅ No new open issues found.")
+    lines.append("✅ **Nothing to fix:** no new open issues detected in this PR.")
 
 lines.extend(["", "---", ""])
 if main_count:
