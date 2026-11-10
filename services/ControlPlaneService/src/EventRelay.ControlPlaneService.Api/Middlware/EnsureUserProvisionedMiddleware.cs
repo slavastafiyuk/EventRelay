@@ -1,3 +1,4 @@
+using EventRelay.ControlPlaneService.Api.Authentication;
 using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
 using EventRelay.ControlPlaneService.Presentation.Contracts.User;
@@ -16,6 +17,16 @@ public sealed class EnsureUserProvisionedMiddleware(RequestDelegate next)
         var endpoint = context.GetEndpoint();
 
         if (endpoint is null || endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null)
+        {
+            await next(context);
+            return;
+        }
+
+        var authorizationMetadata = endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>();
+        var isInternalEndpoint = authorizationMetadata.Any(x =>
+            x.AuthenticationSchemes == InternalServiceAuthenticationDefaults.Scheme);
+
+        if (isInternalEndpoint)
         {
             await next(context);
             return;

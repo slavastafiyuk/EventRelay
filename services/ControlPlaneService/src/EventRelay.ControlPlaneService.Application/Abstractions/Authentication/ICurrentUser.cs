@@ -4,5 +4,5 @@ namespace EventRelay.ControlPlaneService.Application.Abstractions.Authentication
 
 public interface ICurrentUser
 {
-    UserKey? UserKey { get; }
+    UserKey UserKey { get; }
 }

@@ -1,17 +1,15 @@
+using EventRelay.ControlPlaneService.Api.Controllers.Base;
 using EventRelay.ControlPlaneService.Application.Exceptions;
 using EventRelay.ControlPlaneService.Application.Exceptions.Project;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace EventRelay.ControlPlaneService.Api.Controllers;
+namespace EventRelay.ControlPlaneService.Api.Controllers.Public;
 
-[ApiController]
-[Authorize]
 [Route("api/projects")]
 public sealed class ProjectController(
-    IProjectHandler projectHandler) : ControllerBase
+    IProjectHandler projectHandler) : PublicControllerBase
 {
 
     [HttpPost]
