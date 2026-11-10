@@ -12,7 +12,6 @@
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=slavastafiyuk_EventRelay&metric=security_rating)](https://sonarcloud.io/project/overview?id=slavastafiyuk_EventRelay)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=slavastafiyuk_EventRelay&metric=sqale_rating)](https://sonarcloud.io/project/overview?id=slavastafiyuk_EventRelay)
 [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=slavastafiyuk_EventRelay&metric=sqale_index)](https://sonarcloud.io/project/overview?id=slavastafiyuk_EventRelay)
-[![Security Hotspots](https://sonarcloud.io/api/project_badges/measure?project=slavastafiyuk_EventRelay&metric=security_hotspots)](https://sonarcloud.io/project/overview?id=slavastafiyuk_EventRelay)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=slavastafiyuk_EventRelay&metric=ncloc)](https://sonarcloud.io/project/overview?id=slavastafiyuk_EventRelay)
 
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
