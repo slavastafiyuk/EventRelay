@@ -1,4 +1,4 @@
-"""Generate an actionable SonarQube Cloud pull request summary for GitHub."""
+"""Generate a readable SonarQube Cloud pull-request report for a GitHub PR comment."""
 
 import html
 import json
@@ -28,7 +28,7 @@ def sonar_api(endpoint, **params):
 
 
 def safe(value):
-    """Escape SonarQube-provided values before inserting into Markdown."""
+    """Escape untrusted SonarQube text for Markdown tables and headings."""
     text = html.escape(" ".join(str(value).split()), quote=False)
     return (
         text.replace("|", "&#124;")
@@ -39,18 +39,56 @@ def safe(value):
 
 
 def badge(label, value, color):
-    """Generate a static Shields.io badge; no custom CSS needed."""
+    """Return a small, GitHub-compatible Shields.io badge."""
     def segment(text):
         return quote(
             str(text).replace("-", "--").replace("_", "__").replace(" ", "_"),
             safe="",
         )
 
-    image_url = (
+    url = (
         f"https://img.shields.io/badge/{segment(label)}-"
         f"{segment(value)}-{color}?style=flat-square"
     )
-    return f"![{safe(label)}: {safe(value)}]({image_url})"
+    return f"![{safe(label)}: {safe(value)}]({url})"
+
+
+def measures_for(**scope):
+    response = sonar_api(
+        "measures/component",
+        component=PROJECT,
+        metricKeys=",".join(
+            (
+                "quality_gate_details", "new_coverage", "coverage",
+                "new_duplicated_lines_density", "duplicated_lines_density",
+                "new_lines", "ncloc", "security_hotspots", "security_hotspots_reviewed",
+            )
+        ),
+        **scope,
+    )
+    return {
+        measure["metric"]: metric_value(measure)
+        for measure in response["component"].get("measures", [])
+    }
+
+
+def metric_value(measure):
+    """Read both standard and new-code period representations from the API."""
+    if measure.get("value") is not None:
+        return measure["value"]
+    if isinstance(measure.get("period"), dict):
+        return measure["period"].get("value")
+    periods = measure.get("periods") or []
+    return periods[-1].get("value") if periods else None
+
+
+def percent(value):
+    return f"{safe(value)}%" if value is not None else "N/A"
+
+
+def coverage_badge(label, value):
+    # Blue indicates a measurement, not a judgment against the Quality Gate.
+    return badge(label, percent(value), "blue" if value is not None else "lightgrey")
 
 
 def issue_link(issue):
@@ -59,8 +97,10 @@ def issue_link(issue):
 
 def severity_details(issue):
     impacts = issue.get("impacts") or []
-    rank = {"BLOCKER": 6, "CRITICAL": 5, "HIGH": 4, "MAJOR": 3,
-            "MEDIUM": 3, "MINOR": 2, "LOW": 2, "INFO": 1}
+    rank = {
+        "BLOCKER": 6, "CRITICAL": 5, "HIGH": 4, "MAJOR": 3,
+        "MEDIUM": 3, "MINOR": 2, "LOW": 2, "INFO": 1,
+    }
     if impacts:
         impact = max(
             impacts,
@@ -86,26 +126,17 @@ def issue_row(issue):
     filename = component.removeprefix(PROJECT + ":")
     line = issue.get("line") or (issue.get("textRange") or {}).get("startLine")
     location = f"{filename}:{line}" if line else filename
-    message = safe(issue.get("message", "No description"))
     return (
         f"| {severity_details(issue)} | "
-        f"[{message}]({issue_link(issue)}) | `{safe(location)}` |"
+        f"[{safe(issue.get('message', 'No description'))}]({issue_link(issue)}) | "
+        f"`{safe(location)}` |"
     )
 
 
-# SonarQube Cloud has already finished analyzing this PR because the
-# workflow uses sonar.qualitygate.wait=true.
-response = sonar_api(
-    "measures/component",
-    component=PROJECT,
-    pullRequest=PR_NUMBER,
-    metricKeys="quality_gate_details,new_coverage,new_duplicated_lines_density",
-)
-measures = {
-    item["metric"]: item.get("value")
-    for item in response["component"].get("measures", [])
-}
-gate = json.loads(measures.get("quality_gate_details") or "{}")
+# The workflow sets sonar.qualitygate.wait=true, so PR analysis is complete here.
+pr_metrics = measures_for(pullRequest=PR_NUMBER)
+main_metrics = measures_for(branch="main")
+gate = json.loads(pr_metrics.get("quality_gate_details") or "{}")
 gate_status = gate.get("level", "UNKNOWN")
 
 pr_issues = sonar_api(
@@ -128,10 +159,10 @@ main_issues = sonar_api(
     ps=LIMIT,
 )
 
-pr_url = f"{BASE_URL}/dashboard?{urlencode({'id': PROJECT, 'pullRequest': PR_NUMBER})}"
-main_url = f"{BASE_URL}/project/issues?{urlencode({'id': PROJECT, 'branch': 'main'})}"
 pr_count = pr_issues["total"]
 main_count = main_issues["total"]
+pr_url = f"{BASE_URL}/dashboard?{urlencode({'id': PROJECT, 'pullRequest': PR_NUMBER})}"
+main_url = f"{BASE_URL}/project/issues?{urlencode({'id': PROJECT, 'branch': 'main'})}"
 
 if gate_status == "OK":
     gate_label, gate_color = "PASSED", "brightgreen"
@@ -140,47 +171,63 @@ elif gate_status == "ERROR":
 else:
     gate_label, gate_color = "UNKNOWN", "lightgrey"
 
+# Five badges, authored on a single Markdown line. GitHub may wrap on mobile.
 lines = [
     "## 🛡️ EventRelay · Code Quality Report",
     "",
     f"**Pull request #{safe(PR_NUMBER)}** · Target: `main` · SonarQube Cloud",
     "",
-    # All three small badges share ONE Markdown line (also on GitHub).
     " &nbsp; ".join([
         badge("Quality Gate", gate_label, gate_color),
         badge("New Issues", pr_count, "brightgreen" if pr_count == 0 else "red"),
         badge("Existing Issues", main_count, "brightgreen" if main_count == 0 else "orange"),
+        coverage_badge("PR Coverage", pr_metrics.get("new_coverage")),
+        coverage_badge("Main Coverage", main_metrics.get("coverage")),
     ]),
     "",
 ]
 
-# Avoid duplicating the 'no new issues' message in a separate tip box.
 if gate_status == "ERROR":
     lines.extend([
         "> [!WARNING]",
-        "> The Quality Gate failed. Review the failed conditions before merging.",
+        "> The Quality Gate failed. Review its failed conditions before merging.",
         "",
     ])
 
-coverage = measures.get("new_coverage")
-duplication = measures.get("new_duplicated_lines_density")
 lines.extend([
-    "### 📊 New-code metrics",
+    "### 📊 Code metrics",
     "",
-    "| Metric | Value |",
-    "|:--|--:|",
-    f"| Test coverage | **{safe(coverage)}%** |" if coverage is not None
-    else "| Test coverage | **N/A** |",
-    f"| Duplicated lines | **{safe(duplication)}%** |" if duplication is not None
-    else "| Duplicated lines | **N/A** |",
-    "",
+    "| Metric | This PR (new code) | `main` (overall code) |",
+    "|:--|--:|--:|",
+    f"| Test coverage | **{percent(pr_metrics.get('new_coverage'))}** | **{percent(main_metrics.get('coverage'))}** |",
+    f"| Duplicated lines | {percent(pr_metrics.get('new_duplicated_lines_density'))} | {percent(main_metrics.get('duplicated_lines_density'))} |",
 ])
 
-if coverage is None or duplication is None:
-    lines.extend([
-        "*N/A means SonarQube did not return a value for this PR; it does not mean 0%.*",
-        "",
-    ])
+pr_lines = pr_metrics.get("new_lines")
+main_lines = main_metrics.get("ncloc")
+if pr_lines is not None or main_lines is not None:
+    lines.append(
+        f"| Code size | {safe(pr_lines) + ' new lines' if pr_lines is not None else 'N/A'} | "
+        f"{safe(main_lines) + ' non-comment lines' if main_lines is not None else 'N/A'} |"
+    )
+
+hotspots = main_metrics.get("security_hotspots")
+if hotspots is not None:
+    reviewed = main_metrics.get("security_hotspots_reviewed")
+    detail = (
+        f"{safe(hotspots)} total ({percent(reviewed)} reviewed)"
+        if reviewed is not None
+        else f"{safe(hotspots)} total"
+    )
+    lines.append(f"| Security hotspots | — | {detail} on `main` |")
+
+lines.extend([
+    "",
+    "<sub>PR coverage measures added/changed coverable code; main coverage measures the entire "
+    "analyzed main branch. N/A means SonarQube did not return that measurement, "
+    "not necessarily 0%. Code-size figures use different line definitions.</sub>",
+    "",
+])
 
 failed = [
     item for item in gate.get("conditions", [])
@@ -208,7 +255,7 @@ if pr_issues.get("issues"):
     if pr_count > LIMIT:
         lines.append(f"\n*Showing {LIMIT} of {pr_count} new issues.*")
 else:
-    lines.append("✅ **Nothing to fix:** no new open issues detected in this PR.")
+    lines.append("✅ **No new open issues detected in this PR.**")
 
 lines.extend(["", "---", ""])
 if main_count:
@@ -217,7 +264,7 @@ if main_count:
         f"<summary>📁 Existing issues on main — <strong>{main_count} open</strong> "
         f"(showing up to {LIMIT})</summary>",
         "",
-        "These issues already exist on `main` and do not automatically fail this PR's Quality Gate.",
+        "These are existing issues on `main`; they do not automatically fail this PR's Quality Gate.",
         "",
         "| Priority | Finding | File |",
         "|:--|:--|:--|",
@@ -231,7 +278,7 @@ lines.extend([
     f"🔗 **[Full PR analysis]({pr_url})** · **[Main branch backlog]({main_url})**",
     "",
     "<sub>Generated automatically from SonarQube Cloud. "
-    "The GitHub comment updates when CI reruns.</sub>",
+    "This GitHub comment is updated when CI reruns.</sub>",
 ])
 
 output = Path("sonar-pr-report.md")
