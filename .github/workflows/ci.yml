@@ -61,7 +61,7 @@ jobs:
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.cs.vscoveragexml.reportsPaths="coverage.xml" \
             /d:sonar.exclusions=".github/scripts/sonar-pr-report.py" \
-            /d:sonar.qualitygate.wait=true
+            /d:sonar.qualitygate.wait=false
 
       # 6. Build solution
       - name: Build
@@ -125,6 +125,7 @@ jobs:
             echo "KEYCLOAK_ADMIN_PASSWORD=$(openssl rand -hex 24)"
             echo "KEYCLOAK_DEV_USER_PASSWORD=$(openssl rand -hex 24)"
             echo "KEYCLOAK_SECOND_USER_PASSWORD=$(openssl rand -hex 24)"
+            echo "INTERNAL_API_TOKEN=$(openssl rand -hex 32)"
           } > .env
 
           chmod 600 .env

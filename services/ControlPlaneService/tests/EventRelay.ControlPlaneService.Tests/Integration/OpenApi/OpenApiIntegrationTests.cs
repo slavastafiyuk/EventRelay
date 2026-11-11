@@ -63,4 +63,36 @@ public sealed class OpenApiIntegrationTests(CreatePostgresContainer postgres)
                 requirement => requirement.TryGetProperty("OAuth2", out _));
         }
     }
+
+
+    [Fact]
+    public async Task ApiKeyManagement_RequiresOAuth2_AndHidesInternalRoutes()
+    {
+        using var response = await _client.GetAsync("/openapi/v1.json");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var document = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync());
+
+        var paths = document.RootElement.GetProperty("paths");
+
+        var issue = paths
+            .GetProperty("/api/projects/{projectId}/api-keys")
+            .GetProperty("post");
+
+        var revoke = paths
+            .GetProperty("/api/projects/{projectId}/api-keys/{apiKeyId}")
+            .GetProperty("delete");
+
+        static bool RequiresOAuth2(JsonElement operation) =>
+            operation.GetProperty("security")
+                .EnumerateArray()
+                .Any(x => x.TryGetProperty("OAuth2", out _));
+
+        Assert.True(RequiresOAuth2(issue));
+        Assert.True(RequiresOAuth2(revoke));
+        Assert.False(paths.TryGetProperty("/internal/api-keys/resolve", out _));
+    }
+
 }

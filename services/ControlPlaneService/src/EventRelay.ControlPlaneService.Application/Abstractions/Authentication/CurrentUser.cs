@@ -6,8 +6,7 @@ public sealed class CurrentUser : ICurrentUser, ICurrentUserInitializer
 {
     private UserKey? _userKey;
 
-    public UserKey UserKey => _userKey
-        ?? throw new InvalidOperationException("Current user has not been initialized.");
+    public UserKey UserKey => _userKey ?? throw new InvalidOperationException("Current user has not been initialized.");
 
     public void Initialize(UserKey userKey)
     {

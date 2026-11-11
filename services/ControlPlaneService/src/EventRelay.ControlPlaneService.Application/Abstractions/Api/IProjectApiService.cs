@@ -4,6 +4,7 @@ namespace EventRelay.ControlPlaneService.Application.Abstractions.Api;
 
 public interface IProjectApiService
 {
-    Task<IssuedApi> IssueAsync(ProjectApi api, CancellationToken ct);
-    Task RevokeAsync(ApiKey key, CancellationToken ct);
+    Task<IssuedApi> IssueAsync(Guid projectId, string name, CancellationToken ct);
+    Task RevokeAsync(Guid projectId, Guid apiKeyId, CancellationToken ct);
+    Task<Guid?> ResolveProjectIdAsync(string keyHash, CancellationToken cancellationToken);
 }

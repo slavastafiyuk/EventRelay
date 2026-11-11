@@ -11,6 +11,7 @@ namespace EventRelay.ControlPlaneService.Tests.Helpers;
 public sealed class ApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _connectionString;
+    public const string InternalServiceTokenForTests = "integration-test-internal-service-token";
 
     public ApiFactory(string connectionString)
     {
@@ -25,7 +26,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
                 new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:ProjectDatabase"] =
-                        _connectionString
+                        _connectionString,
+                    ["InternalApi:Token"] =
+                        InternalServiceTokenForTests
+
                 });
         });
 

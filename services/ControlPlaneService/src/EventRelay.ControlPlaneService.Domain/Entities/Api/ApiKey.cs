@@ -42,7 +42,14 @@ public sealed class ApiKey : KeyBase<ApiKey>
     private static string ValidateName(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        return name.Trim();
+        name = name.Trim();
+
+        if (name.Length > 150)
+            throw new ArgumentException(
+                "API key name cannot exceed 150 characters.",
+                nameof(name));
+
+        return name;
     }
 
     private static string ValidateHash(string keyHash)

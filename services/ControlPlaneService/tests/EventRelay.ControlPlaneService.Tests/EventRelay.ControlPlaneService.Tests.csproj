@@ -31,8 +31,6 @@
     <ProjectReference Include="..\..\src\EventRelay.ControlPlaneService.Infrastructure\EventRelay.ControlPlaneService.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\infra\local\keycloak\eventrelay-realm.json"
-          Link="eventrelay-realm.json"
-          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\..\infra\local\keycloak\eventrelay-realm.json" Link="eventrelay-realm.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

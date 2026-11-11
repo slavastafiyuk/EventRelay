@@ -1,4 +1,5 @@
 using System.Reflection;
+using EventRelay.ControlPlaneService.Api.Authentication;
 using EventRelay.ControlPlaneService.Api.Middlware;
 using EventRelay.ControlPlaneService.Application;
 using EventRelay.ControlPlaneService.Infrastructure;
@@ -6,6 +7,7 @@ using EventRelay.ControlPlaneService.Presentation;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
 using EventRelay.ControlPlaneService.Repository;
 using Mapster;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
@@ -34,9 +36,7 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer((document, context, cancellationToken) =>
         {
             document.Components ??= new OpenApiComponents();
-
             document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-
             document.Components.SecuritySchemes["OAuth2"] = new OpenApiSecurityScheme
             {
                 Type = SecuritySchemeType.OAuth2,
@@ -124,7 +124,8 @@ builder.Services
             RequireSignedTokens = true,
             RequireExpirationTime = true
         };
-    });
+    }).AddScheme<AuthenticationSchemeOptions, InternalServiceTokenAuthenticator>(
+        InternalServiceAuthenticationDefaults.Scheme, _ => { });
 
 builder.Services.AddAuthorization();
 
