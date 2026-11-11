@@ -358,6 +358,85 @@ public sealed class ComposeAuthenticationTests(
         return token!;
     }
 
+
+    [Fact]
+    [Trait("Category", "ComposeE2E")]
+    public async Task Owner_CanIssueAndRevokeApiKey_ThroughGateway()
+    {
+        var token = await LoginWithPkceAsync(
+            fixture.Username,
+            fixture.Password);
+
+        // Create a project.
+        using var createRequest = new HttpRequestMessage(
+            HttpMethod.Post, "/api/projects")
+        {
+            Content = JsonContent.Create(new
+            {
+                Name = $"ApiKeys-{Guid.NewGuid():N}"
+            })
+        };
+
+        createRequest.Headers.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        using var created = await fixture.Gateway.SendAsync(createRequest);
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        using var projectJson = JsonDocument.Parse(
+            await created.Content.ReadAsStringAsync());
+
+        var projectId = projectJson.RootElement
+            .GetProperty("id").GetGuid();
+
+        // Issue a project API key.
+        using var issueRequest = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/projects/{projectId}/api-keys")
+        {
+            Content = JsonContent.Create(new
+            {
+                Name = "Gateway E2E key"
+            })
+        };
+
+        issueRequest.Headers.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        using var issued = await fixture.Gateway.SendAsync(issueRequest);
+
+        Assert.Equal(HttpStatusCode.Created, issued.StatusCode);
+
+        using var keyJson = JsonDocument.Parse(
+            await issued.Content.ReadAsStringAsync());
+
+        var keyId = keyJson.RootElement
+            .GetProperty("api")
+            .GetProperty("key")
+            .GetProperty("id")
+            .GetGuid();
+
+        var secret = keyJson.RootElement
+            .GetProperty("secret")
+            .GetString();
+
+        Assert.StartsWith("er_", secret);
+
+        // Revoke the key through the same Gateway.
+        using var revokeRequest = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/projects/{projectId}/api-keys/{keyId}");
+
+        revokeRequest.Headers.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        using var revoked = await fixture.Gateway.SendAsync(revokeRequest);
+
+        Assert.Equal(HttpStatusCode.NoContent, revoked.StatusCode);
+    }
+
+
     private static string Base64Url(byte[] bytes)
     {
         return Convert.ToBase64String(bytes)

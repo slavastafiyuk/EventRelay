@@ -57,6 +57,7 @@ services:
       Authentication__Issuer: "http://localhost:8081/realms/eventrelay"
       Authentication__MetadataAddress: "http://keycloak:8080/realms/eventrelay/.well-known/openid-configuration"
       Authentication__Audience: "eventrelay-api"
+      InternalApi__Token: ${INTERNAL_API_TOKEN:?Define INTERNAL_API_TOKEN}
     depends_on:
       control-plane-migrations:
         condition: service_completed_successfully

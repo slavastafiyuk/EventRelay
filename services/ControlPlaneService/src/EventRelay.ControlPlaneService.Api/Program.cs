@@ -125,7 +125,7 @@ builder.Services
             RequireExpirationTime = true
         };
     }).AddScheme<AuthenticationSchemeOptions, InternalServiceTokenAuthenticator>(
-        InternalServiceAuthenticationDefaults.Scheme, _ => { }); ;
+        InternalServiceAuthenticationDefaults.Scheme, _ => { });
 
 builder.Services.AddAuthorization();
 
