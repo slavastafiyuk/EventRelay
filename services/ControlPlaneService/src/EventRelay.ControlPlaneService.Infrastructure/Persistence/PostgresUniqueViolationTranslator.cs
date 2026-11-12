@@ -9,7 +9,7 @@ public sealed class PostgresUniqueViolationTranslator(
     IEnumerable<IDbUpdateExceptionHandler> handlers)
     : IDbUpdateExceptionTranslator
 {
-    private readonly IReadOnlyDictionary<string, IDbUpdateExceptionHandler>
+    private readonly Dictionary<string, IDbUpdateExceptionHandler>
         _handlers = handlers.ToDictionary(
             handler => handler.ConstraintName,
             StringComparer.Ordinal);
