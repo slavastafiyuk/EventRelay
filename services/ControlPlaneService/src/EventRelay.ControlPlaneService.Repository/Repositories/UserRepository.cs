@@ -9,10 +9,7 @@ namespace EventRelay.ControlPlaneService.Repository.Repositories;
 
 public class UserRepository(ControlPlaneDbContext dbContext) : IUserRepository
 {
-
-    public async Task<UserKey> GetOrCreateAsync(
-        User user,
-        CancellationToken cancellationToken)
+    public async Task<UserKey> GetOrCreateAsync(User user, CancellationToken cancellationToken)
     {
         var existing = await dbContext.Users
             .AsNoTracking()
@@ -27,4 +24,13 @@ public class UserRepository(ControlPlaneDbContext dbContext) : IUserRepository
         return user.Key;
     }
 
+
+    public async Task<UserKey?> GetByIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        return await dbContext.Users
+            .AsNoTracking()
+            .Where(x => x.Id == userId)
+            .Select(x => new UserKey(x.Id, x.Name))
+            .SingleOrDefaultAsync(cancellationToken);
+    }
 }

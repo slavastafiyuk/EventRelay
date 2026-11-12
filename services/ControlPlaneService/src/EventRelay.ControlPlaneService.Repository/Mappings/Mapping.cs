@@ -1,8 +1,11 @@
 using EventRelay.ControlPlaneService.Domain.Entities.Api;
+using EventRelay.ControlPlaneService.Domain.Entities.Organization;
+using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Api;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
@@ -14,6 +17,44 @@ public sealed class Mapping : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
+
+        #region Organization Mappings
+
+        config.NewConfig<OrganizationMember, OrganizationMemberRecord>()
+            .Map(dest => dest.UserId, src => src.User.Id)
+            .Map(dest => dest.Role, src => src.Role)
+            .Map(dest => dest.JoinedAt, src => src.JoinedAt)
+            .Ignore(dest => dest.OrganizationId)
+            .Ignore(dest => dest.User);
+
+        config.NewConfig<OrganizationMemberRecord, OrganizationMember>()
+            .MapWith(src => OrganizationMember.Restore(
+                src.User.Adapt<UserKey>(),
+                src.Role,
+                src.JoinedAt));
+
+        config.NewConfig<Organization, OrganizationRecord>()
+            .Map(dest => dest.Id, src => src.Key.Id)
+            .Map(dest => dest.Name, src => src.Key.Name)
+            .Map(dest => dest.CreatedAt, src => src.CreatedAt)
+            .Map(dest => dest.OwnerId, src => src.Owner.Id)
+            .Ignore(dest => dest.Owner)
+            .Map(dest => dest.Members, src => src.Members);
+
+        config.NewConfig<OrganizationRecord, Organization>()
+            .MapWith(src => ToDomain(src));
+
+        #endregion Organization Mappings
+
+        #region Organization Key Mappings
+
+        config.NewConfig<OrganizationKey, OrganizationKeyRecord>();
+
+        config.NewConfig<OrganizationKeyRecord, OrganizationKey>()
+            .MapWith(src => new OrganizationKey(src.Id, src.Name));
+
+        #endregion Organization Key Mappings
+
         #region User Mappings
 
         config.NewConfig<User, UserRecord>()
@@ -105,6 +146,16 @@ public sealed class Mapping : IRegister
 
     }
 
+    private static Organization ToDomain(OrganizationRecord record)
+    {
+        return Organization.Restore(
+            new OrganizationKey(record.Id, record.Name),
+            record.Owner.Adapt<UserKey>(),
+            record.CreatedAt,
+            record.Members
+                .Select(m => m.Adapt<OrganizationMember>()));
+    }
+
     private static Project ToDomain(ProjectRecord record)
     {
         return Project.Restore(
@@ -113,15 +164,6 @@ public sealed class Mapping : IRegister
             record.CreatedAt,
             record.Description,
             record.Access.Adapt<ProjectAccess>());
-    }
-
-    private static ProjectAccess RestoreAccess(ProjectAccessRecord record)
-    {
-        return ProjectAccess.Restore(
-            record.Visibility,
-            record.Members?.Select(m => new ProjectMember(
-                new UserKey(m.User.Id, m.User.Name),
-                m.Role)));
     }
 
     private static ProjectAccess ToDomainAccess(ProjectAccessRecord record)

@@ -221,8 +221,13 @@ public sealed class GatewayForwardingTests(
         Assert.Equal(string.Empty, received.ApiKey);
     }
 
+
     [Theory]
     [InlineData("/api/projects/ping", "controlplane")]
+    [InlineData("/api/organizations/00000000-0000-0000-0000-000000000001",
+        "controlplane")]
+    [InlineData("/api/organizations/00000000-0000-0000-0000-000000000001/members/actions",
+        "controlplane")]
     [InlineData("/api/events/ping", "events")]
     public async Task Gateway_RoutesToCorrectDownstreamService(
         string path,
@@ -239,4 +244,6 @@ public sealed class GatewayForwardingTests(
         Assert.Equal(expectedService, received.Service);
         Assert.Equal(path, received.Path);
     }
+
+
 }

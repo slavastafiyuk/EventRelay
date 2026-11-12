@@ -1,32 +1,31 @@
+
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Exceptions.Abstraction;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace EventRelay.ControlPlaneService.Infrastructure.Persistence;
 
-public sealed class DbUpdateExceptionTranslator
+public sealed class PostgresUniqueViolationTranslator(
+    IEnumerable<IDbUpdateExceptionHandler> handlers)
+    : IDbUpdateExceptionTranslator
 {
-    private readonly IReadOnlyDictionary<string, IDbUpdateExceptionHandler> _handlers;
-
-    public DbUpdateExceptionTranslator(IEnumerable<IDbUpdateExceptionHandler> handlers)
-    {
+    private readonly Dictionary<string, IDbUpdateExceptionHandler>
         _handlers = handlers.ToDictionary(
-            x => x.ConstraintName,
+            handler => handler.ConstraintName,
             StringComparer.Ordinal);
-    }
 
     public Exception? Translate(DbUpdateException exception)
     {
         if (exception.InnerException is not PostgresException
             {
                 SqlState: PostgresErrorCodes.UniqueViolation,
-                ConstraintName: { } constraint
+                ConstraintName: { } constraintName
             })
         {
             return null;
         }
 
-        return _handlers.TryGetValue(constraint, out var handler)
+        return _handlers.TryGetValue(constraintName, out var handler)
             ? handler.Handle(exception)
             : null;
     }

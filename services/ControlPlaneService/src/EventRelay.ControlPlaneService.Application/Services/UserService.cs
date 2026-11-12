@@ -15,4 +15,11 @@ public sealed class UserService(
 
         return userKey;
     }
+
+
+    public Task<UserKey?> GetByIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        return repository.GetByIdAsync(userId, cancellationToken);
+    }
+
 }
