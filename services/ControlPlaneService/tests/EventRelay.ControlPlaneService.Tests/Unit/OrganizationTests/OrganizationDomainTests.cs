@@ -2,6 +2,7 @@
 using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
+using EventRelay.ControlPlaneService.Domain.Exceptions.Organization;
 
 namespace EventRelay.ControlPlaneService.Tests.Unit.OrganizationTests;
 
@@ -38,7 +39,7 @@ public sealed class OrganizationDomainTests
         // Same identity, different UserKey instance.
         var duplicate = new UserKey(member.Id, "Different name");
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<OrganizationRuleViolationException>(() =>
             organization.AddMember(duplicate, OrganizationRole.Admin));
 
         Assert.Equal(2, organization.Members.Count);
@@ -73,10 +74,10 @@ public sealed class OrganizationDomainTests
         var owner = NewUser();
         var organization = NewOrganization(owner);
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<OrganizationRuleViolationException>(() =>
             organization.RemoveMember(owner));
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<OrganizationRuleViolationException>(() =>
             organization.ChangeMemberRole(owner, OrganizationRole.Member));
 
         Assert.True(organization.IsOwner(owner));
@@ -102,7 +103,7 @@ public sealed class OrganizationDomainTests
     {
         var owner = NewUser();
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<OrganizationRuleViolationException>(() =>
             Organization.Restore(
                 new OrganizationKey("Acme"),
                 owner,
@@ -120,7 +121,7 @@ public sealed class OrganizationDomainTests
             OrganizationRole.Member,
             DateTimeOffset.UtcNow);
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<OrganizationRuleViolationException>(() =>
             Organization.Restore(
                 new OrganizationKey("Acme"),
                 owner,
@@ -142,7 +143,7 @@ public sealed class OrganizationDomainTests
             OrganizationRole.Admin,
             joinedAt);
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<OrganizationRuleViolationException>(() =>
             Organization.Restore(
                 new OrganizationKey("Acme"),
                 owner,

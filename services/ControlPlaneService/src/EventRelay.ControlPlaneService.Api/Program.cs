@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using EventRelay.ControlPlaneService.Api.Authentication;
 using EventRelay.ControlPlaneService.Api.Configuration;
+using EventRelay.ControlPlaneService.Api.ExceptionHandling;
 using EventRelay.ControlPlaneService.Api.Middlware;
 using EventRelay.ControlPlaneService.Application;
 using EventRelay.ControlPlaneService.Infrastructure;
@@ -127,9 +128,19 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+
+builder.Services.AddExceptionHandler<OrganizationExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
+
+
+app.UseExceptionHandler(new ExceptionHandlerOptions
+{
+    AllowStatusCode404Response = true
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

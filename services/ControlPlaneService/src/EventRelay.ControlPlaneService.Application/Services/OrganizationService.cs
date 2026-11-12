@@ -15,15 +15,19 @@ public sealed class OrganizationService(
     IUserService userService,
     ICurrentUser currentUser) : IOrganizationService
 {
-    public async Task<OrganizationKey> CreateAsync(Organization organization, CancellationToken cancellationToken)
+    public async Task<OrganizationKey> CreateAsync(
+        Organization organization,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(organization);
 
         var user = currentUser.UserKey
-            ?? throw new InvalidOperationException("Current user is not initialized.");
+            ?? throw new InvalidOperationException(
+                "Current user is not initialized.");
 
         if (!organization.IsOwner(user))
-            throw new InvalidOperationException("Organization owner must match the current user.");
+            throw new InvalidOperationException(
+                "Organization owner must match the current user.");
 
         await repository.AddAsync(organization, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -31,22 +35,22 @@ public sealed class OrganizationService(
         return organization.Key;
     }
 
-    public async Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<Organization?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken)
     {
         var user = currentUser.UserKey
-            ?? throw new InvalidOperationException("Current user is not initialized.");
+            ?? throw new InvalidOperationException(
+                "Current user is not initialized.");
 
-        var organization = await repository.GetByIdAsync(id, cancellationToken);
+        var organization = await repository.GetByIdAsync(
+            id, cancellationToken);
 
-        if (organization is null)
-            return null;
-
-        if (!organization.IsMember(user))
+        if (organization is null || !organization.IsMember(user))
             return null;
 
         return organization;
     }
-
 
     public async Task AddMemberAsync(
         Guid organizationId,
@@ -54,15 +58,20 @@ public sealed class OrganizationService(
         OrganizationRole role,
         CancellationToken cancellationToken)
     {
-        var organization = await GetManageableOrganizationAsync(
+        var organization = await GetAdminManageableOrganizationAsync(
             organizationId, cancellationToken);
+
+        var actor = currentUser.UserKey!;
+
+        if (!organization.IsOwner(actor) &&
+            role != OrganizationRole.Member)
+        {
+            throw new UnauthorizedAccessException(
+                "Only the organization owner can assign the Admin role.");
+        }
 
         var user = await GetExistingUserAsync(
             userId, cancellationToken);
-
-        if (organization.IsMember(user))
-            throw new InvalidOperationException(
-                "User is already a member of the organization.");
 
         organization.AddMember(user, role);
 
@@ -70,7 +79,9 @@ public sealed class OrganizationService(
             m => m.User.Equals(user));
 
         await repository.AddMemberAsync(
-            organizationId, member, cancellationToken);
+            organizationId,
+            member,
+            cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
@@ -81,7 +92,7 @@ public sealed class OrganizationService(
         OrganizationRole role,
         CancellationToken cancellationToken)
     {
-        var organization = await GetManageableOrganizationAsync(
+        var organization = await GetOwnerManageableOrganizationAsync(
             organizationId, cancellationToken);
 
         var user = await GetExistingUserAsync(
@@ -94,7 +105,10 @@ public sealed class OrganizationService(
         organization.ChangeMemberRole(user, role);
 
         await repository.ChangeMemberRoleAsync(
-            organizationId, user.Id, role, cancellationToken);
+            organizationId,
+            user.Id,
+            role,
+            cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
@@ -104,7 +118,7 @@ public sealed class OrganizationService(
         Guid userId,
         CancellationToken cancellationToken)
     {
-        var organization = await GetManageableOrganizationAsync(
+        var organization = await GetOwnerManageableOrganizationAsync(
             organizationId, cancellationToken);
 
         var user = await GetExistingUserAsync(
@@ -117,26 +131,48 @@ public sealed class OrganizationService(
         organization.RemoveMember(user);
 
         await repository.RemoveMemberAsync(
-            organizationId, user.Id, cancellationToken);
+            organizationId,
+            user.Id,
+            cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     #region Helper Methods
 
-
-    private async Task<Organization> GetManageableOrganizationAsync(
+    private async Task<Organization> GetAdminManageableOrganizationAsync(
         Guid organizationId,
         CancellationToken cancellationToken)
     {
         var organization = await GetByIdAsync(
-            organizationId, cancellationToken)
+            organizationId,
+            cancellationToken)
             ?? throw new KeyNotFoundException(
                 "Organization not found.");
 
-        if (!organization.IsOwner(currentUser.UserKey))
+        var actor = currentUser.UserKey
+            ?? throw new InvalidOperationException(
+                "Current user is not initialized.");
+
+        if (!organization.IsAdmin(actor))
             throw new UnauthorizedAccessException(
-                "Only the organization owner can manage members.");
+                "Only organization Admins or the owner can add members.");
+
+        return organization;
+    }
+
+    private async Task<Organization> GetOwnerManageableOrganizationAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken)
+    {
+        var organization = await GetAdminManageableOrganizationAsync(
+            organizationId, cancellationToken);
+
+        var actor = currentUser.UserKey!;
+
+        if (!organization.IsOwner(actor))
+            throw new UnauthorizedAccessException(
+                "Only the organization owner can perform this operation.");
 
         return organization;
     }
@@ -155,7 +191,6 @@ public sealed class OrganizationService(
         return user ?? throw new KeyNotFoundException(
             "User not found.");
     }
-
 
     #endregion Helper Methods
 }

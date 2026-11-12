@@ -1,9 +1,12 @@
 
 using EventRelay.ControlPlaneService.Api.Configuration;
+using EventRelay.ControlPlaneService.Application.Exceptions.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Exceptions;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Exceptions.Abstraction;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
 using EventRelay.ControlPlaneService.Repository.Repositories;
@@ -374,4 +377,100 @@ public sealed class OrganizationMemberRepositoryTests(
             Assert.Equal(OrganizationRole.Member, existing.Role);
         }
     }
+
+
+    [Fact]
+    public async Task AddMemberAsync_DuplicateMembership_TranslatesToConflict()
+    {
+        var seed = await SeedOrganizationAsync(includeMember: true);
+
+        var duplicate = OrganizationMember.Restore(
+            seed.Member,
+            OrganizationRole.Member,
+            DateTimeOffset.UtcNow);
+
+        await using var db = CreateDbContext();
+
+        var repository = new OrganizationRepository(db);
+        var unitOfWork = new EfUnitOfWork(db, CreatePipeline());
+
+        await repository.AddMemberAsync(
+            seed.OrganizationId,
+            duplicate,
+            Ct);
+
+        var exception =
+            await Assert.ThrowsAsync<OrganizationMembershipConflictException>(
+                async () => await unitOfWork.SaveChangesAsync(Ct));
+
+        Assert.IsType<DbUpdateException>(exception.InnerException);
+    }
+
+
+    [Fact]
+    public async Task ChangeMemberRoleAsync_DeletedBeforeSave_TranslatesToConflict()
+    {
+        var seed = await SeedOrganizationAsync(includeMember: true);
+
+        // Request A prepares an update but hasn't saved yet.
+        await using var firstDb = CreateDbContext();
+
+        var firstRepository = new OrganizationRepository(firstDb);
+
+        await firstRepository.ChangeMemberRoleAsync(
+            seed.OrganizationId,
+            seed.Member.Id,
+            OrganizationRole.Admin,
+            Ct);
+
+        await using (var secondDb = CreateDbContext())
+        {
+            var secondRepository = new OrganizationRepository(secondDb);
+
+            await secondRepository.RemoveMemberAsync(
+                seed.OrganizationId,
+                seed.Member.Id,
+                Ct);
+
+            await secondDb.SaveChangesAsync();
+        }
+
+        var unitOfWork = new EfUnitOfWork(
+            firstDb,
+            CreatePipeline());
+
+        var exception =
+            await Assert.ThrowsAsync<OrganizationMembershipConflictException>(
+                async () => await unitOfWork.SaveChangesAsync(Ct));
+
+        Assert.IsType<DbUpdateConcurrencyException>(
+            exception.InnerException);
+    }
+
+
+    #region Helper Methods
+
+
+    private static DbUpdateExceptionPipeline CreatePipeline()
+    {
+        return new DbUpdateExceptionPipeline(
+            new IDbUpdateExceptionTranslator[]
+            {
+            new PostgresUniqueViolationTranslator(
+                new IDbUpdateExceptionHandler[]
+                {
+                    new OrganizationMemberConflictHandler()
+                }),
+
+            new EfConcurrencyExceptionTranslator(
+                new IDbUpdateConcurrencyHandler[]
+                {
+                    new OrganizationMemberConcurrencyHandler()
+                })
+            },
+            Array.Empty<IDbUpdateRecoveryStrategy>());
+    }
+
+
+    #endregion Helper Methods
 }

@@ -1,6 +1,7 @@
 
 using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
+using EventRelay.ControlPlaneService.Domain.Exceptions.Organization;
 
 namespace EventRelay.ControlPlaneService.Domain.Entities.Organization;
 
@@ -40,20 +41,20 @@ public sealed class Organization
         var restoredMembers = members.ToList();
 
         if (restoredMembers.Any(m => m is null))
-            throw new InvalidOperationException("Organization members cannot contain null.");
+            throw new OrganizationRuleViolationException("Organization members cannot contain null.");
 
         if (restoredMembers
             .GroupBy(m => m.User.Id)
             .Any(group => group.Count() > 1))
         {
-            throw new InvalidOperationException("Duplicate organization members.");
+            throw new OrganizationRuleViolationException("User is already a member of the organization.");
         }
 
         var ownerMember = restoredMembers.FirstOrDefault(m => m.User.Equals(owner));
 
         if (ownerMember is null || ownerMember.Role != OrganizationRole.Admin)
         {
-            throw new InvalidOperationException("Organization owner must be an Admin member.");
+            throw new OrganizationRuleViolationException("Organization owner must be an Admin member.");
         }
 
         CreatedAt = createdAt;
@@ -72,7 +73,7 @@ public sealed class Organization
             throw new ArgumentOutOfRangeException(nameof(role));
 
         if (IsMember(user))
-            throw new InvalidOperationException("User is already a member of the organization.");
+            throw new OrganizationRuleViolationException("User is already a member of the organization.");
 
         _members.Add(new OrganizationMember(user, role));
     }
@@ -82,10 +83,10 @@ public sealed class Organization
         ArgumentNullException.ThrowIfNull(user);
 
         if (IsOwner(user))
-            throw new InvalidOperationException("Organization owner cannot be removed.");
+            throw new OrganizationRuleViolationException("Organization owner cannot be removed.");
 
         var member = FindMember(user) ??
-            throw new InvalidOperationException("User is not a member of the organization.");
+            throw new OrganizationRuleViolationException("User is not a member of the organization.");
 
         _members.Remove(member);
     }
@@ -98,10 +99,10 @@ public sealed class Organization
             throw new ArgumentOutOfRangeException(nameof(role));
 
         if (IsOwner(user) && role != OrganizationRole.Admin)
-            throw new InvalidOperationException("Organization owner must remain an Admin.");
+            throw new OrganizationRuleViolationException("Organization owner must remain an Admin.");
 
         var member = FindMember(user)
-            ?? throw new InvalidOperationException("User is not a member of the organization.");
+            ?? throw new OrganizationRuleViolationException("User is not a member of the organization.");
 
         member.ChangeRole(role);
     }

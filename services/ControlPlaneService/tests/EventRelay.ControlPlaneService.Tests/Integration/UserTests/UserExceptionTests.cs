@@ -41,19 +41,23 @@ public sealed class UserExceptionTests(CreatePostgresContainer fixture) : IClass
             Subject = subject
         });
 
-        var translator = new DbUpdateExceptionTranslator(
-            new IDbUpdateExceptionHandler[]
+        var pipeline = new DbUpdateExceptionPipeline(
+            new IDbUpdateExceptionTranslator[]
             {
-                new ProjectNameConflictHandler(),
-                new UserIdentityConflictHandler()
-            });
-
-        var pipeline = new DbUpdateExceptionPipeline(translator,
+                new PostgresUniqueViolationTranslator(
+                    new IDbUpdateExceptionHandler[]
+                    {
+                        new ProjectNameConflictHandler(),
+                        new UserIdentityConflictHandler()
+                    }),
+                new EfConcurrencyExceptionTranslator(
+                    Array.Empty<IDbUpdateConcurrencyHandler>())
+            },
             new IDbUpdateRecoveryStrategy[]
             {
-                new DetachSingleAddedEntryRecovery<UserRecord>("IX_users_Issuer_Subject")
+                new DetachSingleAddedEntryRecovery<UserRecord>(
+                    "IX_users_Issuer_Subject")
             });
-
 
         var unitOfWork = new EfUnitOfWork(secondDb, pipeline);
 

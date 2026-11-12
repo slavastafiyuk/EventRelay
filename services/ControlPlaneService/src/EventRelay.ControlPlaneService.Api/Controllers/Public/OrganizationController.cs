@@ -11,6 +11,7 @@ namespace EventRelay.ControlPlaneService.Api.Controllers.Public;
 public sealed class OrganizationController(
     IOrganizationHandler organizationHandler) : PublicControllerBase
 {
+
     [HttpPost]
     [ProducesResponseType(typeof(OrganizationKeyDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -19,27 +20,16 @@ public sealed class OrganizationController(
         [FromBody] OrganizationCreateDTO dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var organization = await organizationHandler.CreateAsync(
-                dto,
-                cancellationToken);
+        var organization = await organizationHandler.CreateAsync(
+            dto,
+            cancellationToken);
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = organization.Id },
-                organization);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Invalid organization request.",
-                Status = StatusCodes.Status400BadRequest,
-                Detail = ex.Message
-            });
-        }
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = organization.Id },
+            organization);
     }
+
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(OrganizationDTO), StatusCodes.Status200OK)]
@@ -59,7 +49,6 @@ public sealed class OrganizationController(
         return Ok(organization);
     }
 
-
     [HttpPost("{id:guid}/members/actions")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -72,40 +61,12 @@ public sealed class OrganizationController(
         [FromBody] OrganizationMemberActionDTO dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            await organizationHandler.ManageMemberAsync(
-                id,
-                dto,
-                cancellationToken);
+        await organizationHandler.ManageMemberAsync(
+            id,
+            dto,
+            cancellationToken);
 
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Invalid organization member request.",
-                Status = StatusCodes.Status400BadRequest,
-                Detail = ex.Message
-            });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Title = "Organization member operation conflict.",
-                Status = StatusCodes.Status409Conflict,
-                Detail = ex.Message
-            });
-        }
+        return NoContent();
     }
+
 }

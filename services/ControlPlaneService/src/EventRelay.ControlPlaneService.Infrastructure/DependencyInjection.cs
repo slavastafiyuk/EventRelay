@@ -37,7 +37,10 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddSingleton<IDbUpdateExceptionHandler, ProjectNameConflictHandler>();
         services.AddSingleton<IDbUpdateExceptionHandler, UserIdentityConflictHandler>();
-        services.AddSingleton<DbUpdateExceptionTranslator>();
+        services.AddSingleton<IDbUpdateExceptionHandler, OrganizationMemberConflictHandler>();
+        services.AddSingleton<IDbUpdateConcurrencyHandler, OrganizationMemberConcurrencyHandler>();
+        services.AddSingleton<IDbUpdateExceptionTranslator, PostgresUniqueViolationTranslator>();
+        services.AddSingleton<IDbUpdateExceptionTranslator, EfConcurrencyExceptionTranslator>();
         services.AddSingleton<IDbUpdateRecoveryStrategy>(new DetachSingleAddedEntryRecovery<UserRecord>("IX_users_Issuer_Subject"));
         services.AddSingleton<DbUpdateExceptionPipeline>();
 

@@ -261,13 +261,15 @@ public sealed class OrganizationMemberManagementIntegrationTests(
             removedMemberResponse.StatusCode);
     }
 
+
     [Theory]
-    [InlineData(OrganizationRoleDTO.Member)]
-    [InlineData(OrganizationRoleDTO.Admin)]
-    public async Task NonOwner_CannotManageMembers(
-        OrganizationRoleDTO role)
+    [InlineData(OrganizationRoleDTO.Member, HttpStatusCode.Forbidden, 2)]
+    [InlineData(OrganizationRoleDTO.Admin, HttpStatusCode.NoContent, 3)]
+    public async Task NonOwner_AddMember_RespectsRolePermissions(
+        OrganizationRoleDTO role,
+        HttpStatusCode expectedStatus,
+        int expectedMemberCount)
     {
-        // Arrange
         var ownerSubject = NewSubject();
         var memberSubject = NewSubject();
         var otherSubject = NewSubject();
@@ -275,6 +277,7 @@ public sealed class OrganizationMemberManagementIntegrationTests(
         var organizationId = await CreateOrganizationAsync(ownerSubject);
 
         var member = await ProvisionUserAsync(organizationId, memberSubject);
+
         var other = await ProvisionUserAsync(organizationId, otherSubject);
 
         using (var response = await ManageMemberAsync(
@@ -289,8 +292,7 @@ public sealed class OrganizationMemberManagementIntegrationTests(
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
-        // Act: a non-owner attempts to add another user.
-        using var forbiddenResponse = await ManageMemberAsync(
+        using var responseFromMember = await ManageMemberAsync(
             organizationId,
             memberSubject,
             new AddOrganizationMemberDTO
@@ -299,20 +301,74 @@ public sealed class OrganizationMemberManagementIntegrationTests(
                 Role = OrganizationRoleDTO.Member
             });
 
-        // Assert: even Admin cannot manage members
-        // because the current policy is owner-only.
+        Assert.Equal(expectedStatus, responseFromMember.StatusCode);
+
+        var organization = await GetOrganizationAsync(organizationId, ownerSubject);
+
+        Assert.Equal(expectedMemberCount, organization.Members.Count);
+
+        if (role == OrganizationRoleDTO.Admin)
+        {
+            var addedMember = Assert.Single(organization.Members, x => x.User.Id == other.Id);
+
+            Assert.Equal(OrganizationRoleDTO.Member, addedMember.Role);
+        }
+        else
+        {
+            Assert.DoesNotContain(organization.Members, x => x.User.Id == other.Id);
+        }
+    }
+
+
+    [Fact]
+    public async Task Admin_CannotAddAnotherAdmin()
+    {
+        var ownerSubject = NewSubject();
+        var adminSubject = NewSubject();
+        var otherSubject = NewSubject();
+
+        var organizationId = await CreateOrganizationAsync(ownerSubject);
+
+        var admin = await ProvisionUserAsync(
+            organizationId, adminSubject);
+
+        var other = await ProvisionUserAsync(
+            organizationId, otherSubject);
+
+        // Owner appoints Admin.
+        using (var response = await ManageMemberAsync(
+            organizationId,
+            ownerSubject,
+            new AddOrganizationMemberDTO
+            {
+                UserKey = admin,
+                Role = OrganizationRoleDTO.Admin
+            }))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        // Admin tries to appoint another Admin.
+        using var responseFromAdmin = await ManageMemberAsync(
+            organizationId,
+            adminSubject,
+            new AddOrganizationMemberDTO
+            {
+                UserKey = other,
+                Role = OrganizationRoleDTO.Admin
+            });
+
         Assert.Equal(
             HttpStatusCode.Forbidden,
-            forbiddenResponse.StatusCode);
+            responseFromAdmin.StatusCode);
 
         var organization = await GetOrganizationAsync(
-            organizationId, ownerSubject);
+            organizationId,
+            ownerSubject);
 
         Assert.Equal(2, organization.Members.Count);
-        Assert.DoesNotContain(
-            organization.Members,
-            x => x.User.Id == other.Id);
     }
+
 
     [Fact]
     public async Task Owner_CannotRemoveOrDemoteSelf()
