@@ -13,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectHandler, ProjectHandler>();
         services.AddScoped<IUserHandler, UserHandler>();
         services.AddScoped<IProjectApiHandler, ProjectApiHandler>();
+        services.AddScoped<IOrganizationHandler, OrganizationHandler>();
 
         return services;
     }

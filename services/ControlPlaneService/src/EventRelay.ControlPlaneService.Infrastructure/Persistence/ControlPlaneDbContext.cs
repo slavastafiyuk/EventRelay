@@ -1,4 +1,5 @@
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Api;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ public sealed class ControlPlaneDbContext(
     DbContextOptions<ControlPlaneDbContext> options)
     : DbContext(options)
 {
+    public DbSet<OrganizationRecord> Organizations => Set<OrganizationRecord>();
     public DbSet<ProjectRecord> Projects => Set<ProjectRecord>();
     public DbSet<UserRecord> Users => Set<UserRecord>();
     public DbSet<ProjectApiRecord> ProjectApiKeys => Set<ProjectApiRecord>();

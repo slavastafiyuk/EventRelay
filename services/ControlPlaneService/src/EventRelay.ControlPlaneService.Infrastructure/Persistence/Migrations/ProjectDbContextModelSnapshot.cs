@@ -74,6 +74,79 @@ namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Migrations
                     b.ToTable("project_api_keys", (string)null);
                 });
 
+            modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationKeyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("Id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("Name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("organizations", (string)null);
+                });
+
+            modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationMemberRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("OrganizationId");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("UserId");
+
+                    b.Property<DateTimeOffset>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("JoinedAt");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("Role");
+
+                    b.HasKey("OrganizationId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("organization_members", (string)null);
+                });
+
+            modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("Id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("Name");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("OwnerId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("organizations", (string)null);
+                });
+
             modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access.ProjectAccessRecord", b =>
                 {
                     b.Property<Guid>("ProjectId")
@@ -235,6 +308,43 @@ namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Migrations
                     b.Navigation("RevokedBy");
                 });
 
+            modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationKeyRecord", b =>
+                {
+                    b.HasOne("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationRecord", null)
+                        .WithOne()
+                        .HasForeignKey("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationKeyRecord", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationMemberRecord", b =>
+                {
+                    b.HasOne("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationRecord", null)
+                        .WithMany("Members")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User.UserKeyRecord", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationRecord", b =>
+                {
+                    b.HasOne("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User.UserKeyRecord", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
             modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access.ProjectAccessRecord", b =>
                 {
                     b.HasOne("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.ProjectRecord", null)
@@ -288,6 +398,11 @@ namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Migrations
                         .HasForeignKey("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User.UserKeyRecord", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationRecord", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access.ProjectAccessRecord", b =>

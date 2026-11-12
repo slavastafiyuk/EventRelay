@@ -1,9 +1,13 @@
 using EventRelay.ControlPlaneService.Application.Models;
 using EventRelay.ControlPlaneService.Domain.Entities.Api;
+using EventRelay.ControlPlaneService.Domain.Entities.Organization;
+using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Api;
+using EventRelay.ControlPlaneService.Presentation.Contracts.Organization;
+using EventRelay.ControlPlaneService.Presentation.Contracts.Organization.Access;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Ping;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project.Access;
@@ -85,6 +89,32 @@ public sealed class Mapping : IRegister
 
         #endregion
 
+
+        #region Organization Mappings
+
+        config.NewConfig<OrganizationKey, OrganizationKeyDTO>();
+
+        config.NewConfig<OrganizationKeyDTO, OrganizationKey>()
+            .MapWith(src => new OrganizationKey(src.Id, src.Name));
+
+        config.NewConfig<OrganizationCreateDTO, OrganizationKey>()
+            .MapWith(src => new OrganizationKey(src.Name));
+
+        config.NewConfig<OrganizationMember, OrganizationMemberDTO>()
+            .MapWith(src => ToOrganizationMemberDTO(src));
+
+        config.NewConfig<OrganizationMemberDTO, OrganizationMember>()
+            .MapWith(src => ToDomainMember(src));
+
+        config.NewConfig<Organization, OrganizationDTO>()
+            .MapWith(src => ToOrganizationDTO(src));
+
+        config.NewConfig<OrganizationDTO, Organization>()
+            .MapWith(src => ToDomainOrganization(src));
+
+        #endregion Organization Mappings
+
+
     }
 
     private static ProjectMember ToDomainMember(ProjectMemberDTO dto)
@@ -150,5 +180,49 @@ public sealed class Mapping : IRegister
             IsActive = api.IsActive
         };
     }
+
+
+    private static OrganizationDTO ToOrganizationDTO(Organization organization)
+    {
+        return new OrganizationDTO
+        {
+            Key = organization.Key.Adapt<OrganizationKeyDTO>(),
+            Owner = organization.Owner.Adapt<UserKeyDTO>(),
+            CreatedAt = organization.CreatedAt,
+            Members = organization.Members
+                .Select(m => m.Adapt<OrganizationMemberDTO>())
+                .ToList()
+        };
+    }
+
+    private static OrganizationMemberDTO ToOrganizationMemberDTO(
+        OrganizationMember member)
+    {
+        return new OrganizationMemberDTO
+        {
+            User = member.User.Adapt<UserKeyDTO>(),
+            Role = (OrganizationRoleDTO)member.Role,
+            JoinedAt = member.JoinedAt
+        };
+    }
+
+    private static OrganizationMember ToDomainMember(
+        OrganizationMemberDTO dto)
+    {
+        return OrganizationMember.Restore(
+            dto.User.Adapt<UserKey>(),
+            (OrganizationRole)dto.Role,
+            dto.JoinedAt);
+    }
+
+    private static Organization ToDomainOrganization(OrganizationDTO dto)
+    {
+        return Organization.Restore(
+            dto.Key.Adapt<OrganizationKey>(),
+            dto.Owner.Adapt<UserKey>(),
+            dto.CreatedAt,
+            dto.Members.Select(m => m.Adapt<OrganizationMember>()));
+    }
+
 
 }

@@ -1,26 +1,20 @@
 using System.Reflection;
+using System.Text.Json.Serialization;
 using EventRelay.ControlPlaneService.Api.Authentication;
+using EventRelay.ControlPlaneService.Api.Configuration;
 using EventRelay.ControlPlaneService.Api.Middlware;
 using EventRelay.ControlPlaneService.Application;
 using EventRelay.ControlPlaneService.Infrastructure;
 using EventRelay.ControlPlaneService.Presentation;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
 using EventRelay.ControlPlaneService.Repository;
-using Mapster;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
-var config = TypeAdapterConfig.GlobalSettings;
-
-config.Scan(
-    typeof(EventRelay.ControlPlaneService.Repository.Mappings.Mapping).Assembly,
-    typeof(EventRelay.ControlPlaneService.Presentation.Mappings.Mapping).Assembly);
-
-config.RequireExplicitMapping = true;
-config.Compile();
+MapsterInitialization.Initialize();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +23,11 @@ var isGeneratingOpenApi =
     == "GetDocument.Insider";
 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddOpenApi(options =>
 {
