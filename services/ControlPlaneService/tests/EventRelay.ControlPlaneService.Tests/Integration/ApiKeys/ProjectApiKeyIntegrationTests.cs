@@ -232,4 +232,33 @@ public sealed class ProjectApiKeyIntegrationTests(
 
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
     }
+
+
+    [Fact]
+    public async Task Revoke_CannotRevokeKeyFromAnotherProject()
+    {
+        // Arrange: two projects with different owners.
+        var (ownerA, projectA) = await CreateProjectAsync();
+        var (ownerB, projectB) = await CreateProjectAsync();
+
+        var keyB = await IssueAsync(ownerB, projectB);
+
+        // Act: owner A tries to revoke project B's key
+        // using project A's API endpoint.
+        using var response = await SendAsUserAsync(
+            HttpMethod.Delete,
+            $"/api/projects/{projectA}/api-keys/{keyB.Api.Key.Id}",
+            ownerA);
+
+        // Assert: the key does not belong to project A.
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        // The rejected operation must not revoke project B's key.
+        using var resolve = await ResolveAsync(
+            ApiKey.Hash(keyB.Secret),
+            ApiFactory.InternalServiceTokenForTests);
+
+        Assert.Equal(HttpStatusCode.OK, resolve.StatusCode);
+    }
+
 }
