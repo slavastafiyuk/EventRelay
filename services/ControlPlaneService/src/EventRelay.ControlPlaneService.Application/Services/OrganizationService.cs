@@ -138,6 +138,14 @@ public sealed class OrganizationService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<bool> IsMemberAsync(OrganizationKey key, UserKey user, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        var organization = await repository.GetByIdAsync(key.Id, cancellationToken);
+
+        return organization is not null && organization.IsMember(user);
+    }
+
     #region Helper Methods
 
     private async Task<Organization> GetAdminManageableOrganizationAsync(
