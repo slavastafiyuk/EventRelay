@@ -1,4 +1,5 @@
 using CommunityToolkit.Diagnostics;
+using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 
@@ -7,9 +8,10 @@ namespace EventRelay.ControlPlaneService.Domain.Entities.Project;
 public class Project
 {
     public ProjectKey Key { get; private set; } = null!;
+    public OrganizationKey Organization { get; set; } = null!;
+    public UserKey Owner { get; private set; } = null!;
     public string? Description { get; set; }
     public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
-    public UserKey Owner { get; private set; } = null!;
     public ProjectAccess Access { get; private set; } = new();
     private const ProjectPermission DefinedPermissions =
         ProjectPermission.Read |
@@ -36,8 +38,7 @@ public class Project
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        if (required == ProjectPermission.None ||
-            (required & ~DefinedPermissions) != ProjectPermission.None)
+        if (required == ProjectPermission.None || (required & DefinedPermissions) != ProjectPermission.None)
             return false;
 
         if (Owner.Equals(user))
@@ -66,13 +67,14 @@ public class Project
     public static Project Restore(
     ProjectKey key,
     UserKey owner,
+    OrganizationKey organization,
     DateTime createdAt,
     string? description,
     ProjectAccess access)
     {
         ArgumentNullException.ThrowIfNull(access);
 
-        var project = new Project(key, owner, createdAt)
+        var project = new Project(key, owner, organization, createdAt)
         {
             Description = description,
             Access = access
@@ -86,12 +88,13 @@ public class Project
     }
 
     private Project() { }
-    public Project(ProjectKey key, UserKey owner)
+    public Project(ProjectKey key, UserKey owner, OrganizationKey organization)
     {
         Key = key ?? throw new ArgumentNullException(nameof(key));
         Owner = owner ?? throw new ArgumentNullException(nameof(owner));
+        Organization = organization ?? throw new ArgumentNullException(nameof(organization));
     }
-    public Project(ProjectKey key, UserKey owner, DateTime createdAt) : this(key, owner)
+    public Project(ProjectKey key, UserKey owner, OrganizationKey organization, DateTime createdAt) : this(key, owner, organization)
     {
         CreatedAt = createdAt;
     }
