@@ -7,7 +7,6 @@ using EventRelay.ControlPlaneService.Application.Abstractions.Users;
 using EventRelay.ControlPlaneService.Application.Exceptions;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
-using EventRelay.ControlPlaneService.Domain.Entities.User;
 
 namespace EventRelay.ControlPlaneService.Application.Services;
 
@@ -36,10 +35,7 @@ public sealed class ProjectService(
 
     #region Members Management
 
-    public async Task AddMemberAsync(ProjectKey key, UserKey user, ProjectRole role, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
+
 
     #endregion Memebrs Management
 

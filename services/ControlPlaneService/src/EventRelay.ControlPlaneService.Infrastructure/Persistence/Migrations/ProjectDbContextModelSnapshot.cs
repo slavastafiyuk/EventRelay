@@ -220,13 +220,20 @@ namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(150)")
                         .HasColumnName("Name");
 
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("OrganizationId");
+
                     b.Property<Guid>("OwnerId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("OwnerId");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Name")
                         .IsUnique();
+
+                    b.HasIndex("OrganizationId");
 
                     b.HasIndex("OwnerId");
 
@@ -382,11 +389,18 @@ namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.ProjectRecord", b =>
                 {
+                    b.HasOne("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization.OrganizationKeyRecord", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User.UserKeyRecord", "Owner")
                         .WithMany()
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Organization");
 
                     b.Navigation("Owner");
                 });

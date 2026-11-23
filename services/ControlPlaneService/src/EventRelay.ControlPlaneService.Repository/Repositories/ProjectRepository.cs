@@ -23,6 +23,7 @@ public sealed class ProjectRepository(ControlPlaneDbContext dbContext) : IProjec
         var record = await dbContext.Projects
             .AsNoTracking()
             .Include(x => x.Owner)
+            .Include(x => x.Organization)
             .Include(x => x.Access).ThenInclude(x => x.Members).ThenInclude(x => x.User)
             .SingleOrDefaultAsync(
                 x => x.Id == id,
