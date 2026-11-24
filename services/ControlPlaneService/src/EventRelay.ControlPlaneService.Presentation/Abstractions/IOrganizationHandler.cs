@@ -6,6 +6,6 @@ namespace EventRelay.ControlPlaneService.Presentation.Abstractions;
 public interface IOrganizationHandler
 {
     Task<OrganizationKeyDTO> CreateAsync(OrganizationCreateDTO dto, CancellationToken cancellationToken);
-    Task<OrganizationDTO?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<OrganizationDTO?> LoadAsync(Guid id, CancellationToken cancellationToken);
     Task ManageMemberAsync(Guid organizationId, OrganizationMemberActionDTO dto, CancellationToken cancellationToken);
 }

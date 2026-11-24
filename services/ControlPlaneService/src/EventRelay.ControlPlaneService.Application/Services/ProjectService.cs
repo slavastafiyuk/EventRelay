@@ -29,7 +29,6 @@ public sealed class ProjectService(
         if (!project.Owner.Equals(actor))
             throw new UnauthorizedAccessException("Project owner must match the current user.");
 
-
         var organizationKey = await organizationService.LoadKeyAsync(project.Organization, cancellationToken);
 
         if (!await organizationService.IsMemberAsync(organizationKey, actor, cancellationToken))

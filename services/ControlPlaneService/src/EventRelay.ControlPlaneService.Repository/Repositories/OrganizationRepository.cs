@@ -18,7 +18,7 @@ public sealed class OrganizationRepository(
             cancellationToken);
     }
 
-    public async Task<Organization?> GetAsync(OrganizationKey key, CancellationToken cancellationToken)
+    public async Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var record = await dbContext.Organizations
             .AsNoTracking()
@@ -26,7 +26,7 @@ public sealed class OrganizationRepository(
             .Include(x => x.Members)
             .ThenInclude(x => x.User)
             .SingleOrDefaultAsync(
-                x => x.Id == key.Id,
+                x => x.Id == id,
                 cancellationToken);
 
         return record?.Adapt<Organization>();

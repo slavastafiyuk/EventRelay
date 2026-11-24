@@ -35,16 +35,16 @@ public sealed class OrganizationService(
         return organization.Key;
     }
 
-    public async Task<Organization?> GetByKeyAsync(
-        OrganizationKey key,
+    public async Task<Organization?> GetByIdAsync(
+        Guid id,
         CancellationToken cancellationToken)
     {
         var user = currentUser.UserKey
             ?? throw new InvalidOperationException(
                 "Current user is not initialized.");
 
-        var organization = await repository.GetAsync(
-            key, cancellationToken);
+        var organization = await repository.GetByIdAsync(
+            id, cancellationToken);
 
         if (organization is null || !organization.IsMember(user))
             return null;
@@ -141,7 +141,7 @@ public sealed class OrganizationService(
     public async Task<bool> IsMemberAsync(OrganizationKey key, UserKey user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(user);
-        var organization = await GetByKeyAsync(key, cancellationToken);
+        var organization = await GetByIdAsync(key.Id, cancellationToken);
 
         return organization is not null && organization.IsMember(user);
     }
@@ -160,7 +160,7 @@ public sealed class OrganizationService(
         Guid organizationId,
         CancellationToken cancellationToken)
     {
-        var organization = await GetByKeyAsync(
+        var organization = await GetByIdAsync(
             organizationId,
             cancellationToken)
             ?? throw new KeyNotFoundException(
