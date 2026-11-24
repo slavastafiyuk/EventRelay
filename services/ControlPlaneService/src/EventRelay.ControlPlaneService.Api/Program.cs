@@ -128,8 +128,13 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+#region Exception Handling
 
 builder.Services.AddExceptionHandler<OrganizationExceptionHandler>();
+builder.Services.AddExceptionHandler<ProjectExceptionHandler>();
+
+#endregion Exception Handling
+
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
