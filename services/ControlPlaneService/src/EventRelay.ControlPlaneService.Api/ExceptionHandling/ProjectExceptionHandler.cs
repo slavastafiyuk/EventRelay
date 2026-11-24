@@ -28,8 +28,7 @@ public sealed class ProjectExceptionHandler : IExceptionHandler
 
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid project request."),
 
-            ProjectMemberConflictException => (StatusCodes.Status409Conflict, "Project membership conflict."),
-
+            ProjectMemberConflictException or ProjectMembershipConflictException => (StatusCodes.Status409Conflict, "Project membership conflict."),
             _ => null
         };
 
