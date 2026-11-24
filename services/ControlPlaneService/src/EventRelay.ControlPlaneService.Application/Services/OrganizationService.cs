@@ -146,6 +146,14 @@ public sealed class OrganizationService(
         return organization is not null && organization.IsMember(user);
     }
 
+    public async Task<OrganizationKey> LoadKeyAsync(OrganizationKey key, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        return await repository.GetKeyAsync(key, cancellationToken)
+            ?? throw new KeyNotFoundException("Organization not found.");
+    }
+
     #region Helper Methods
 
     private async Task<Organization> GetAdminManageableOrganizationAsync(

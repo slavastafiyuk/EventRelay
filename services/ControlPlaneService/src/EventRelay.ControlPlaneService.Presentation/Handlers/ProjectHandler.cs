@@ -1,5 +1,6 @@
 using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
+using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
@@ -16,7 +17,7 @@ public class ProjectHandler(
         var owner = currentUser.UserKey
             ?? throw new InvalidOperationException("Current user is not initialized.");
 
-        var project = dto.Adapt(new Project(new ProjectKey(dto.Name), currentUser.UserKey));
+        var project = dto.Adapt(new Project(new ProjectKey(dto.Name), owner, dto.Organization.Adapt<OrganizationKey>()));
 
         var result = await projectService.CreateAsync(
             project,

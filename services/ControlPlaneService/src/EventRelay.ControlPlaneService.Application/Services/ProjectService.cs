@@ -33,6 +33,14 @@ public sealed class ProjectService(
         return GetAuthorizedAsync(id, ProjectPermission.Read, cancellationToken);
     }
 
+    public async Task<ProjectKey> LoadKeyAsync(ProjectKey key, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        return await repository.GetKeyAsync(key, cancellationToken)
+            ?? throw new KeyNotFoundException("Project not found.");
+    }
+
     #region Members Management
 
 

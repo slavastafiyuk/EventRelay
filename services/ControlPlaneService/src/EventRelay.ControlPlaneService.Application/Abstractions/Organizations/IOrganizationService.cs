@@ -1,10 +1,11 @@
+using EventRelay.ControlPlaneService.Application.Abstractions.Common;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 
 namespace EventRelay.ControlPlaneService.Application.Abstractions.Organizations;
 
-public interface IOrganizationService
+public interface IOrganizationService : IExistingKeyService<OrganizationKey>
 {
     Task<OrganizationKey> CreateAsync(Organization organization, CancellationToken cancellationToken);
     Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken);

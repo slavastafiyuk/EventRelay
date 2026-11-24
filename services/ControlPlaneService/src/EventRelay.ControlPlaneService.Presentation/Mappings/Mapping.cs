@@ -37,6 +37,7 @@ public sealed class Mapping : IRegister
                 src.Description,
                 src.Access.Adapt<ProjectAccess>()));
         config.NewConfig<ProjectCreateDTO, Project>()
+            .Ignore(dest => dest.Organization)
             .Ignore(dest => dest.Owner);
 
         #endregion Project Mappings

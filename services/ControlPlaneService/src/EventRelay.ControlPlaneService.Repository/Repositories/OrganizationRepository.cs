@@ -1,3 +1,4 @@
+using CommunityToolkit.Diagnostics;
 using EventRelay.ControlPlaneService.Application.Abstractions.Organizations;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
@@ -83,4 +84,15 @@ public sealed class OrganizationRepository(
         return Task.CompletedTask;
     }
 
+    public async Task<OrganizationKey> GetKeyAsync(OrganizationKey key, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        var record = await dbContext.Set<OrganizationKeyRecord>()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == key.Id, cancellationToken);
+
+        Guard.IsNotNull(record);
+        return record.Adapt<OrganizationKey>();
+    }
 }
