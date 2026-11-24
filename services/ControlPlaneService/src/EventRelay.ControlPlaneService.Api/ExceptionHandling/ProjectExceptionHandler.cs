@@ -1,6 +1,7 @@
 
 using EventRelay.ControlPlaneService.Application.Exceptions;
 using EventRelay.ControlPlaneService.Application.Exceptions.Project;
+using EventRelay.ControlPlaneService.Domain.Exceptions.Project;
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace EventRelay.ControlPlaneService.Api.ExceptionHandling;
@@ -26,6 +27,8 @@ public sealed class ProjectExceptionHandler : IExceptionHandler
             KeyNotFoundException => (StatusCodes.Status404NotFound, "Resource not found."),
 
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid project request."),
+
+            ProjectMemberConflictException => (StatusCodes.Status409Conflict, "Project membership conflict."),
 
             _ => null
         };

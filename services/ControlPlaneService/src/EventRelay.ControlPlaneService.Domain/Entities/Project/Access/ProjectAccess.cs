@@ -50,7 +50,7 @@ public sealed class ProjectAccess
     internal void SetVisibility(ProjectVisibility visibility)
     {
         if (!Enum.IsDefined(visibility))
-            throw new InvalidOperationException("This visibility is not supported yet.");
+            throw new ArgumentOutOfRangeException(nameof(visibility));
 
         Visibility = visibility;
 
