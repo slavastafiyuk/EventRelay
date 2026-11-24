@@ -36,9 +36,7 @@ public sealed class ProjectApiKeyIntegrationTests(
         var user = $"owner-{Guid.NewGuid():N}";
 
         using var response = await SendAsUserAsync(
-            HttpMethod.Post,
-            "/api/projects",
-            user,
+            HttpMethod.Post, "/api/projects", user,
             new ProjectCreateDTO
             {
                 Name = $"Project-{Guid.NewGuid():N}"

@@ -1,9 +1,11 @@
 using System.Text.Json;
 using EventRelay.ControlPlaneService.Domain.Entities.Api;
+using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Api;
+using EventRelay.ControlPlaneService.Presentation.Contracts.Organization;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project.Access;
 using EventRelay.ControlPlaneService.Presentation.Contracts.User;
@@ -15,15 +17,28 @@ namespace EventRelay.ControlPlaneService.Tests.Unit.Mappings;
 public sealed class PresentationMappingTests
 {
     [Fact]
-    public void ProjectCreateDto_MapsOntoExistingProject_WithoutChangingOwnerOrKey()
+    public void ProjectCreateDto_MapsOntoExistingProject_WithoutChangingKeys()
     {
-        var owner = new UserKey(Guid.CreateVersion7(), "owner");
-        var key = new ProjectKey(Guid.CreateVersion7(), "MyStore");
-        var project = new Project(key, owner);
+        var owner = new UserKey(
+            Guid.CreateVersion7(), "owner");
+
+        var key = new ProjectKey(
+            Guid.CreateVersion7(), "MyStore");
+
+        var organization = new OrganizationKey(
+            Guid.CreateVersion7(), "Acme");
+
+        var project = new Project(key, owner, organization);
+
         var dto = new ProjectCreateDTO
         {
             Name = "MyStore",
-            Description = "Online store"
+            Description = "Online store",
+            Organization = new OrganizationKeyDTO
+            {
+                Id = Guid.CreateVersion7(),
+                Name = "Different organization"
+            }
         };
 
         var mapped = dto.Adapt(project);
@@ -33,9 +48,12 @@ public sealed class PresentationMappingTests
         Assert.Equal(key.Name, mapped.Key.Name);
         Assert.Equal(owner.Id, mapped.Owner.Id);
         Assert.Equal(owner.Name, mapped.Owner.Name);
+        Assert.Same(organization, mapped.Organization);
+
         Assert.Equal(dto.Description, mapped.Description);
         Assert.Equal(ProjectVisibility.Private, mapped.Access.Visibility);
     }
+
 
     [Fact]
     public void Project_MapsToDto_IncludingOwnerAccessAndMembers()

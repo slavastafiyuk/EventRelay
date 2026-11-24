@@ -45,10 +45,13 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
     {
         var name = $"MyStore-{Guid.NewGuid():N}";
 
+        var organization = await OrganizationTestHelper.CreateAsync(_client, "user-a");
+
         var request = new ProjectCreateDTO
         {
             Name = name,
-            Description = "Online store project"
+            Description = "Online store project",
+            Organization = organization
         };
 
         using var createResponse = await PostAsUserAsync(request);
@@ -78,10 +81,12 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
     [Fact]
     public async Task Create_DuplicateName_ReturnsConflict()
     {
+        var organization = await OrganizationTestHelper.CreateAsync(_client, "user-a");
 
         var request = new ProjectCreateDTO
         {
-            Name = $"Duplicate-{Guid.NewGuid():N}"
+            Name = $"Duplicate-{Guid.NewGuid():N}",
+            Organization = organization
         };
 
         using var firstResponse = await PostAsUserAsync(request);
@@ -105,9 +110,12 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
     [Fact]
     public async Task Create_NameTooLong_ReturnsBadRequest()
     {
+        var organization = await OrganizationTestHelper.CreateAsync(_client, "user-a");
+
         var request = new ProjectCreateDTO
         {
-            Name = new string('A', 151)
+            Name = new string('A', 151),
+            Organization = organization
         };
 
         using var response = await PostAsUserAsync(request);
@@ -121,10 +129,13 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
     {
         var name = $"Persisted-{Guid.NewGuid():N}";
 
+        var organization = await OrganizationTestHelper.CreateAsync(_client, "user-a");
+
         var request = new ProjectCreateDTO
         {
             Name = name,
-            Description = "PostgreSQL integration test"
+            Description = "PostgreSQL integration test",
+            Organization = organization
         };
 
         using var response = await PostAsUserAsync(request);
@@ -153,9 +164,12 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
     [Fact]
     public async Task Create_WhitespaceName_ReturnsBadRequest()
     {
+        var organization = await OrganizationTestHelper.CreateAsync(_client, "user-a");
+
         var request = new ProjectCreateDTO
         {
-            Name = "   "
+            Name = "   ",
+            Organization = organization
         };
 
         using var response = await PostAsUserAsync(request);
@@ -166,9 +180,12 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
     [Fact]
     public async Task Create_WithoutAuthentication_Returns401()
     {
+        var organization = await OrganizationTestHelper.CreateAsync(_client, "user-a");
+
         var dto = new ProjectCreateDTO
         {
-            Name = "UnauthorizedProject"
+            Name = "UnauthorizedProject",
+            Organization = organization
         };
 
         using var response = await _client.PostAsJsonAsync("/api/projects", dto);
@@ -186,9 +203,12 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
     [Fact]
     public async Task GetById_AsDifferentUser_Returns403()
     {
+        var organization = await OrganizationTestHelper.CreateAsync(_client, "user-a");
+
         var dto = new ProjectCreateDTO
         {
-            Name = $"Private-{Guid.NewGuid():N}"
+            Name = $"Private-{Guid.NewGuid():N}",
+            Organization = organization
         };
 
         using var createResponse = await PostAsUserAsync(dto);
