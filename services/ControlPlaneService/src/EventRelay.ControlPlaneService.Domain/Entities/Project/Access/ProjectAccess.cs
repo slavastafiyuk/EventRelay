@@ -14,13 +14,13 @@ public sealed class ProjectAccess
         ArgumentNullException.ThrowIfNull(user);
 
         if (Visibility != ProjectVisibility.Internal)
-            throw new InvalidOperationException("Only internal projects can have members.");
+            throw new ProjectMemberConflictException("Only internal projects can have members.");
 
         if (!Enum.IsDefined(role))
             throw new ArgumentOutOfRangeException(nameof(role));
 
         if (_members.Any(x => x.User.Equals(user)))
-            throw new InvalidOperationException("User already belongs to this project.");
+            throw new ProjectMemberConflictException("User already belongs to this project.");
 
         var member = new ProjectMember(user, role);
 
@@ -44,7 +44,7 @@ public sealed class ProjectAccess
     {
         var removed = _members.RemoveAll(x => x.User.Equals(user));
 
-        if (removed == 0) throw new InvalidOperationException("User is not a project member.");
+        if (removed == 0) throw new ProjectMemberConflictException("User is not a project member.");
     }
 
     internal void SetVisibility(ProjectVisibility visibility)

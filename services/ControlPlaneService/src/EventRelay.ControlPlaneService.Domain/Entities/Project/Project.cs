@@ -2,6 +2,7 @@ using CommunityToolkit.Diagnostics;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
+using EventRelay.ControlPlaneService.Domain.Exceptions.Project;
 
 namespace EventRelay.ControlPlaneService.Domain.Entities.Project;
 
@@ -25,7 +26,7 @@ public class Project
         Guard.IsNotNull(user);
 
         if (user.Equals(Owner))
-            throw new InvalidOperationException("Project owner cannot be added as a member.");
+            throw new ProjectMemberConflictException("Project owner cannot be added as a member.");
 
         return Access.AddMember(user, role);
     }
