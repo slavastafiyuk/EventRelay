@@ -44,6 +44,9 @@ public sealed class ProjectRepository(ControlPlaneDbContext dbContext) : IProjec
     public async Task AddMemberAsync(ProjectKey key, ProjectMember member, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(member);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
         var record = member.Adapt<ProjectMemberRecord>();
         record.ProjectId = key.Id;
 
@@ -54,6 +57,8 @@ public sealed class ProjectRepository(ControlPlaneDbContext dbContext) : IProjec
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(member);
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         var record = member.Adapt<ProjectMemberRecord>();
         record.ProjectId = key.Id;
@@ -71,6 +76,8 @@ public sealed class ProjectRepository(ControlPlaneDbContext dbContext) : IProjec
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(user);
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         var record = new ProjectMemberRecord
         {
