@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
+using EventRelay.ControlPlaneService.Presentation.Contracts.Organization;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
 using EventRelay.ControlPlaneService.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
@@ -18,12 +19,14 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
         _client = container.Client;
     }
 
-    private async Task<HttpResponseMessage> PostAsUserAsync(ProjectCreateDTO dto)
+    private async Task<HttpResponseMessage> PostAsUserAsync(
+    ProjectCreateDTO dto,
+    string subject = "user-a")
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Post, "/api/projects");
 
-        request.Headers.Add("X-Test-User", "user-a");
+        request.Headers.Add("X-Test-User", subject);
         request.Content = JsonContent.Create(dto);
 
         return await _client.SendAsync(request);
@@ -158,6 +161,7 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
 
         Assert.Equal(name, persisted.Name);
         Assert.Equal(request.Description, persisted.Description);
+        Assert.Equal(organization.Id, persisted.OrganizationId);
     }
 
 
@@ -225,5 +229,75 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
 
         using var response = await _client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+    [Fact]
+    public async Task Create_AsNonOrganizationMember_Returns404()
+    {
+        var organization = await OrganizationTestHelper.CreateAsync(
+            _client, "user-a");
+
+        var dto = new ProjectCreateDTO
+        {
+            Name = $"Forbidden-{Guid.NewGuid():N}",
+            Organization = organization
+        };
+
+        using var response = await PostAsUserAsync(dto, "user-b");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        await AssertProjectDoesNotExistAsync(dto.Name);
+    }
+
+    [Fact]
+    public async Task Create_WithNonexistentOrganization_Returns404()
+    {
+        var dto = new ProjectCreateDTO
+        {
+            Name = $"MissingOrg-{Guid.NewGuid():N}",
+            Organization = new OrganizationKeyDTO
+            {
+                Id = Guid.CreateVersion7(),
+                Name = "Nonexistent organization"
+            }
+        };
+
+        using var response = await PostAsUserAsync(dto);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        await AssertProjectDoesNotExistAsync(dto.Name);
+    }
+
+    [Fact]
+    public async Task Create_WithEmptyOrganizationId_Returns400()
+    {
+        var dto = new ProjectCreateDTO
+        {
+            Name = $"InvalidOrg-{Guid.NewGuid():N}",
+            Organization = new OrganizationKeyDTO
+            {
+                Id = Guid.Empty,
+                Name = "Invalid organization"
+            }
+        };
+
+        using var response = await PostAsUserAsync(dto);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        await AssertProjectDoesNotExistAsync(dto.Name);
+    }
+
+    private async Task AssertProjectDoesNotExistAsync(string name)
+    {
+        var options = new DbContextOptionsBuilder<ControlPlaneDbContext>()
+            .UseNpgsql(_container.ConnectionString)
+            .Options;
+
+        await using var db = new ControlPlaneDbContext(options);
+
+        Assert.False(await db.Projects
+            .AnyAsync(x => x.Name == name));
     }
 }

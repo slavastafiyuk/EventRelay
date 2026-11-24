@@ -64,15 +64,20 @@ public sealed class ProjectMemberIntegrationTests(CreatePostgresContainer fixtur
         return await fixture.Client.SendAsync(request);
     }
 
+
     private async Task<Guid> CreateProjectAsAsync(string subject)
     {
+        var organization = await OrganizationTestHelper.CreateAsync(
+            fixture.Client, subject);
+
         using var response = await SendAsAsync(
             HttpMethod.Post,
             "/api/projects",
             subject,
             new ProjectCreateDTO
             {
-                Name = $"Members-{Guid.NewGuid():N}"
+                Name = $"Members-{Guid.NewGuid():N}",
+                Organization = organization
             });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -84,6 +89,7 @@ public sealed class ProjectMemberIntegrationTests(CreatePostgresContainer fixtur
 
         return project.Id;
     }
+
 
     // Member-management HTTP endpoints do not exist yet.
     // Seed membership using EF Core, then verify the real GET API.
