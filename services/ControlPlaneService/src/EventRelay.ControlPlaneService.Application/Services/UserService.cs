@@ -22,4 +22,11 @@ public sealed class UserService(
         return repository.GetByIdAsync(userId, cancellationToken);
     }
 
+    public async Task<UserKey> LoadKeyAsync(UserKey key, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        return await repository.GetKeyAsync(key, cancellationToken)
+            ?? throw new KeyNotFoundException("User not found.");
+    }
 }

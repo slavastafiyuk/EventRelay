@@ -1,4 +1,3 @@
-using CommunityToolkit.Diagnostics;
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
@@ -33,7 +32,7 @@ public sealed class ProjectRepository(ControlPlaneDbContext dbContext) : IProjec
         return record?.Adapt<Project>();
     }
 
-    public async Task<ProjectKey> GetKeyAsync(ProjectKey key, CancellationToken cancellationToken)
+    public async Task<ProjectKey?> GetKeyAsync(ProjectKey key, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(key);
 
@@ -41,7 +40,6 @@ public sealed class ProjectRepository(ControlPlaneDbContext dbContext) : IProjec
             .AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == key.Id, cancellationToken);
 
-        Guard.IsNotNull(record);
-        return record.Adapt<ProjectKey>();
+        return record?.Adapt<ProjectKey>();
     }
 }

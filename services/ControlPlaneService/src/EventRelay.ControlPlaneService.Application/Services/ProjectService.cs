@@ -20,13 +20,29 @@ public sealed class ProjectService(
 
     public async Task<ProjectKey> CreateAsync(Project project, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(project.Organization);
         Guard.IsNotNullOrWhiteSpace(project.Key.Name);
-        Guard.IsNotNull(project.Key.Id);
+
+        var actor = await userService.LoadKeyAsync(project.Owner, cancellationToken);
+
+        if (!project.Owner.Equals(actor))
+            throw new UnauthorizedAccessException("Project owner must match the current user.");
+
+
+        var organizationKey = await organizationService.LoadKeyAsync(project.Organization, cancellationToken);
+
+        if (!await organizationService.IsMemberAsync(organizationKey, actor, cancellationToken))
+            throw new KeyNotFoundException("Organization not found.");
+
+        if (project.Access.Members.Count > 0)
+            throw new ArgumentException("Project members cannot be assigned during creation.");
 
         await repository.AddAsync(project, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return project.Key;
     }
+
 
     public Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {

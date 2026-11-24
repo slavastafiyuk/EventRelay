@@ -1,4 +1,3 @@
-using CommunityToolkit.Diagnostics;
 using EventRelay.ControlPlaneService.Application.Abstractions.Organizations;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
@@ -19,7 +18,7 @@ public sealed class OrganizationRepository(
             cancellationToken);
     }
 
-    public async Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<Organization?> GetAsync(OrganizationKey key, CancellationToken cancellationToken)
     {
         var record = await dbContext.Organizations
             .AsNoTracking()
@@ -27,7 +26,7 @@ public sealed class OrganizationRepository(
             .Include(x => x.Members)
             .ThenInclude(x => x.User)
             .SingleOrDefaultAsync(
-                x => x.Id == id,
+                x => x.Id == key.Id,
                 cancellationToken);
 
         return record?.Adapt<Organization>();
@@ -84,7 +83,7 @@ public sealed class OrganizationRepository(
         return Task.CompletedTask;
     }
 
-    public async Task<OrganizationKey> GetKeyAsync(OrganizationKey key, CancellationToken cancellationToken)
+    public async Task<OrganizationKey?> GetKeyAsync(OrganizationKey key, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(key);
 
@@ -92,7 +91,6 @@ public sealed class OrganizationRepository(
             .AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == key.Id, cancellationToken);
 
-        Guard.IsNotNull(record);
-        return record.Adapt<OrganizationKey>();
+        return record?.Adapt<OrganizationKey>();
     }
 }

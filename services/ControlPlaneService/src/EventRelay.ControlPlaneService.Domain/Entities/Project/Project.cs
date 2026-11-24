@@ -90,6 +90,16 @@ public class Project
         return project;
     }
 
+    public void RefreshOrganizationKey(OrganizationKey validatedKey)
+    {
+        ArgumentNullException.ThrowIfNull(validatedKey);
+
+        if (Organization is not null && Organization.Id != validatedKey.Id)
+            throw new InvalidOperationException("Cannot change the project's organization.");
+
+        Organization = validatedKey;
+    }
+
     private Project() { }
 
     public Project(ProjectKey key, UserKey owner)
