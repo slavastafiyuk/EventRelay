@@ -62,7 +62,7 @@ public class Project
         return (granted & required) == required;
     }
 
-    public void ChangeMemberRole(UserKey user, ProjectRole role)
+    public ProjectMember ChangeMemberRole(UserKey user, ProjectRole role)
         => Access.ChangeMemberRole(user, role);
 
     public static Project Restore(

@@ -29,15 +29,15 @@ public sealed class ProjectAccess
         return member;
     }
 
-    internal void ChangeMemberRole(UserKey user, ProjectRole role)
+    internal ProjectMember ChangeMemberRole(UserKey user, ProjectRole role)
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        var member = _members.SingleOrDefault(
-            x => x.User.Equals(user))
+        var member = _members.SingleOrDefault(x => x.User.Equals(user))
             ?? throw new ProjectMemberConflictException("User is not a project member.");
-
         member.ChangeRole(role);
+
+        return member;
     }
 
     internal void RemoveMember(UserKey user)

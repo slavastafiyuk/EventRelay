@@ -18,6 +18,7 @@ public sealed class ProjectService(
     IUserService userService,
     ICurrentUser currentUser) : IProjectService
 {
+    #region Members Management
 
     public async Task AddMemberAsync(Guid id, UserKey user, ProjectRole role, CancellationToken cancellationToken)
     {
@@ -46,21 +47,84 @@ public sealed class ProjectService(
     }
 
 
-    public Task ChangeMemberRoleAsync(Guid id, UserKey user, ProjectRole role, CancellationToken cancellationToken)
+
+    public async Task ChangeMemberRoleAsync(Guid id, UserKey user, ProjectRole role, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(user);
+
+        var project = await GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException("Project not found.");
+
+        var organization = project.Organization
+            ?? throw new KeyNotFoundException("Project has no organization.");
+
+        if (!project.HasPermission(currentUser.UserKey, ProjectPermission.ManageMembers))
+            throw new ProjectAccessDeniedException();
+
+        var validatedUser = await userService.LoadKeyAsync(user, cancellationToken);
+        var partOfOrganization = await organizationService.IsMemberAsync(organization, validatedUser, cancellationToken);
+
+        if (!partOfOrganization)
+            throw new KeyNotFoundException("User not found.");
+
+        var member = project.ChangeMemberRole(validatedUser, role);
+
+        await repository.ChangeMemberRoleAsync(project.Key, member, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public Task ChangeVisibilityAsync(Guid id, ProjectVisibility visibility, CancellationToken cancellationToken)
+
+
+    public async Task ChangeVisibilityAsync(Guid id, ProjectVisibility visibility, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var project = await GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException("Project not found.");
+
+        var organization = project.Organization
+            ?? throw new KeyNotFoundException("Project has no organization.");
+
+        if (!project.HasPermission(currentUser.UserKey, ProjectPermission.ManageMembers))
+            throw new ProjectAccessDeniedException();
+
+        var partOfOrganization = await organizationService.IsMemberAsync(organization, currentUser.UserKey, cancellationToken);
+
+        if (!partOfOrganization)
+            throw new KeyNotFoundException("Project not found.");
+
+        project.ChangeVisibility(visibility);
+
+        await repository.ChangeVisibilityAsync(project.Key, project.Access.Visibility, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public Task RemoveMemberAsync(Guid id, UserKey user, CancellationToken cancellationToken)
+    public async Task RemoveMemberAsync(Guid id, UserKey user, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(user);
+
+        var project = await GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException("Project not found.");
+
+        var organization = project.Organization
+            ?? throw new KeyNotFoundException("Project has no organization.");
+
+        if (!project.HasPermission(currentUser.UserKey, ProjectPermission.ManageMembers))
+            throw new ProjectAccessDeniedException();
+
+        var partOfOrganization = await organizationService.IsMemberAsync(organization, currentUser.UserKey, cancellationToken);
+
+        if (!partOfOrganization)
+            throw new KeyNotFoundException("Project not found.");
+
+        var validatedUser = await userService.LoadKeyAsync(user, cancellationToken);
+
+        project.RemoveMember(validatedUser);
+
+        await repository.RemoveMemberAsync(project.Key, validatedUser, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
+
+    #endregion Members Management
 
     public async Task<ProjectKey> CreateAsync(Project project, CancellationToken cancellationToken)
     {
