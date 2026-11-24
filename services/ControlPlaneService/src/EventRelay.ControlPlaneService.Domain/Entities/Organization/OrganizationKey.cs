@@ -6,7 +6,7 @@ public sealed class OrganizationKey : KeyBaseAlternative<OrganizationKey, string
     {
         get;
         set => field = string.IsNullOrWhiteSpace(value)
-            ? throw new ArgumentException("Invalid project name.")
+            ? throw new ArgumentException("Invalid organization name.")
             : value.Trim();
     } = null!;
 

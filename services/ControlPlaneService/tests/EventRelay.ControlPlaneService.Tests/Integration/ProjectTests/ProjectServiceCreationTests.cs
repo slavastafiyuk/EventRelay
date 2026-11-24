@@ -270,4 +270,30 @@ public sealed class ProjectServiceCreationTests(
         Assert.False(await db.Projects.AnyAsync(
             x => x.Id == project.Key.Id));
     }
+
+    [Fact]
+    public async Task Create_WithNonexistentOrganization_ThrowsKeyNotFound()
+    {
+        var actor = await ProvisionUserAsync();
+
+        await using var db = CreateDbContext();
+
+        var service = CreateProjectService(db, actor);
+
+        var project = new Project(
+            new ProjectKey($"Invalid-{Guid.NewGuid():N}"),
+            actor,
+            new OrganizationKey(
+                Guid.CreateVersion7(),
+                "Nonexistent organization"));
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => service.CreateAsync(
+                project,
+                CancellationToken.None));
+
+        Assert.False(await db.Projects.AnyAsync(
+            x => x.Id == project.Key.Id));
+    }
+
 }
