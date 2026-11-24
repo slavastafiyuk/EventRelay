@@ -14,14 +14,14 @@ public class ProjectHandler(
 {
     public async Task<ProjectKeyDTO> CreateAsync(ProjectCreateDTO dto, CancellationToken cancellationToken)
     {
-        var owner = currentUser.UserKey
-            ?? throw new InvalidOperationException("Current user is not initialized.");
+        ArgumentNullException.ThrowIfNull(dto);
 
-        var project = dto.Adapt(new Project(new ProjectKey(dto.Name), owner, dto.Organization.Adapt<OrganizationKey>()));
-
-        var result = await projectService.CreateAsync(
-            project,
-            cancellationToken);
+        var project = dto.Adapt(
+            new Project(
+                new ProjectKey(dto.Name),
+                currentUser.UserKey,
+                dto.Organization.Adapt<OrganizationKey>()));
+        var result = await projectService.CreateAsync(project, cancellationToken);
 
         return result.Adapt<ProjectKeyDTO>();
     }

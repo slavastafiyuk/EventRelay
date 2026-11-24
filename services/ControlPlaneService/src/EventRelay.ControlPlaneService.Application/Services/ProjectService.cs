@@ -24,19 +24,18 @@ public sealed class ProjectService(
         ArgumentNullException.ThrowIfNull(project.Organization);
         Guard.IsNotNullOrWhiteSpace(project.Key.Name);
 
-        var actor = await userService.LoadKeyAsync(project.Owner, cancellationToken);
-
-        if (!project.Owner.Equals(actor))
+        if (!project.Owner.Equals(currentUser.UserKey))
             throw new UnauthorizedAccessException("Project owner must match the current user.");
 
         var organizationKey = await organizationService.LoadKeyAsync(project.Organization, cancellationToken);
 
-        if (!await organizationService.IsMemberAsync(organizationKey, actor, cancellationToken))
+        if (!await organizationService.IsMemberAsync(organizationKey, currentUser.UserKey, cancellationToken))
             throw new KeyNotFoundException("Organization not found.");
 
         if (project.Access.Members.Count > 0)
             throw new ArgumentException("Project members cannot be assigned during creation.");
 
+        project.RefreshOrganizationKey(organizationKey);
         await repository.AddAsync(project, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return project.Key;
