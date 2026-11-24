@@ -1,8 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Organization;
+using EventRelay.ControlPlaneService.Presentation.Contracts.Organization.Access;
+using EventRelay.ControlPlaneService.Presentation.Contracts.Organization.Access.Actions;
 using EventRelay.ControlPlaneService.Presentation.Contracts.Project;
+using EventRelay.ControlPlaneService.Presentation.Contracts.User;
 using EventRelay.ControlPlaneService.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
 
@@ -300,4 +305,109 @@ public sealed class ProjectControllerTests : IClassFixture<CreatePostgresContain
         Assert.False(await db.Projects
             .AnyAsync(x => x.Name == name));
     }
+
+    [Fact]
+    public async Task Create_WithoutOrganization_Returns400()
+    {
+        var name = $"MissingOrg-{Guid.NewGuid():N}";
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post, "/api/projects");
+
+        request.Headers.Add("X-Test-User", "user-a");
+
+        request.Content = JsonContent.Create(new
+        {
+            Name = name
+        });
+
+        using var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        await AssertProjectDoesNotExistAsync(name);
+    }
+
+
+    [Theory]
+    [InlineData(OrganizationRoleDTO.Member)]
+    [InlineData(OrganizationRoleDTO.Admin)]
+    public async Task Create_AsOrganizationMember_Returns201(
+        OrganizationRoleDTO role)
+    {
+        var ownerSubject = $"owner-{Guid.NewGuid():N}";
+        var memberSubject = $"member-{Guid.NewGuid():N}";
+
+        var organization = await OrganizationTestHelper.CreateAsync(
+            _client, ownerSubject);
+
+        // Provision the second user.
+        await OrganizationTestHelper.CreateAsync(
+            _client, memberSubject);
+
+        var options = new DbContextOptionsBuilder<ControlPlaneDbContext>()
+            .UseNpgsql(_container.ConnectionString)
+            .Options;
+
+        await using var db = new ControlPlaneDbContext(options);
+
+        var member = await db.Users
+            .AsNoTracking()
+            .SingleAsync(x => x.Subject == memberSubject);
+
+        var action = new AddOrganizationMemberDTO
+        {
+            UserKey = new UserKeyDTO
+            {
+                Id = member.Id,
+                Name = member.Name
+            },
+            Role = role
+        };
+
+        var jsonOptions = new JsonSerializerOptions(
+            JsonSerializerDefaults.Web);
+
+        jsonOptions.Converters.Add(new JsonStringEnumConverter());
+
+        using var addRequest = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/organizations/{organization.Id}/members/actions");
+
+        addRequest.Headers.Add("X-Test-User", ownerSubject);
+
+        addRequest.Content =
+            JsonContent.Create<OrganizationMemberActionDTO>(
+                action, options: jsonOptions);
+
+        using var addResponse = await _client.SendAsync(addRequest);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            addResponse.StatusCode);
+
+        var dto = new ProjectCreateDTO
+        {
+            Name = $"MemberProject-{Guid.NewGuid():N}",
+            Organization = organization
+        };
+
+        using var response = await PostAsUserAsync(
+            dto, memberSubject);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var created = await response.Content
+            .ReadFromJsonAsync<ProjectKeyDTO>();
+
+        Assert.NotNull(created);
+
+        var persisted = await db.Projects
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == created.Id);
+
+        Assert.Equal(member.Id, persisted.OwnerId);
+        Assert.Equal(organization.Id, persisted.OrganizationId);
+    }
+
 }
