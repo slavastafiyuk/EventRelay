@@ -296,4 +296,71 @@ public sealed class ProjectServiceCreationTests(
             x => x.Id == project.Key.Id));
     }
 
+
+    [Fact]
+    public async Task Create_AfterOrganizationMembershipRemoval_ThrowsKeyNotFound()
+    {
+        var owner = await ProvisionUserAsync();
+        var member = await ProvisionUserAsync();
+
+        var organization = await CreateOrganizationAsync(owner);
+
+        await using (var db = CreateDbContext())
+        {
+            var organizationService =
+                CreateOrganizationService(db, owner);
+
+            await organizationService.AddMemberAsync(
+                organization.Id,
+                member.Id,
+                OrganizationRole.Member,
+                CancellationToken.None);
+        }
+
+        var allowedProject = new Project(
+            new ProjectKey($"Allowed-{Guid.NewGuid():N}"),
+            member,
+            organization);
+
+        await using (var db = CreateDbContext())
+        {
+            var service = CreateProjectService(db, member);
+
+            await service.CreateAsync(
+                allowedProject,
+                CancellationToken.None);
+        }
+
+        await using (var db = CreateDbContext())
+        {
+            var organizationService =
+                CreateOrganizationService(db, owner);
+
+            await organizationService.RemoveMemberAsync(
+                organization.Id,
+                member.Id,
+                CancellationToken.None);
+        }
+
+        var forbiddenProject = new Project(
+            new ProjectKey($"Forbidden-{Guid.NewGuid():N}"),
+            member,
+            organization);
+
+        await using (var db = CreateDbContext())
+        {
+            var service = CreateProjectService(db, member);
+
+            await Assert.ThrowsAsync<KeyNotFoundException>(
+                () => service.CreateAsync(
+                    forbiddenProject,
+                    CancellationToken.None));
+
+            Assert.True(await db.Projects.AnyAsync(
+                x => x.Id == allowedProject.Key.Id));
+
+            Assert.False(await db.Projects.AnyAsync(
+                x => x.Id == forbiddenProject.Key.Id));
+        }
+    }
 }
