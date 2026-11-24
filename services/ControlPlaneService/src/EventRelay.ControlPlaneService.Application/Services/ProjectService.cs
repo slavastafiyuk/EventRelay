@@ -7,6 +7,7 @@ using EventRelay.ControlPlaneService.Application.Abstractions.Users;
 using EventRelay.ControlPlaneService.Application.Exceptions;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
+using EventRelay.ControlPlaneService.Domain.Entities.User;
 
 namespace EventRelay.ControlPlaneService.Application.Services;
 
@@ -17,6 +18,49 @@ public sealed class ProjectService(
     IUserService userService,
     ICurrentUser currentUser) : IProjectService
 {
+
+    public async Task AddMemberAsync(Guid id, UserKey user, ProjectRole role, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        var project = await GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException("Project not found.");
+
+        var organization = project.Organization
+            ?? throw new KeyNotFoundException("Project has not organization.");
+
+        if (!project.HasPermission(currentUser.UserKey, ProjectPermission.ManageMembers))
+            throw new ProjectAccessDeniedException();
+
+        var validatedUser = await userService.LoadKeyAsync(user, cancellationToken);
+
+        var partOfOrganization = await organizationService.IsMemberAsync(organization, validatedUser, cancellationToken);
+
+        if (!partOfOrganization)
+            throw new KeyNotFoundException("User not found.");
+
+        var member = project.AddMember(validatedUser, role);
+
+        await repository.AddMemberAsync(project.Key, member, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+
+    public Task ChangeMemberRoleAsync(Guid id, UserKey user, ProjectRole role, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task ChangeVisibilityAsync(Guid id, ProjectVisibility visibility, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task RemoveMemberAsync(Guid id, UserKey user, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
 
     public async Task<ProjectKey> CreateAsync(Project project, CancellationToken cancellationToken)
     {

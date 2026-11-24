@@ -20,14 +20,14 @@ public class Project
         ProjectPermission.ManageMembers |
         ProjectPermission.ManageApiKeys;
 
-    public void AddMember(UserKey user, ProjectRole role)
+    public ProjectMember AddMember(UserKey user, ProjectRole role)
     {
         Guard.IsNotNull(user);
 
         if (user.Equals(Owner))
             throw new InvalidOperationException("Project owner cannot be added as a member.");
 
-        Access.AddMember(user, role);
+        return Access.AddMember(user, role);
     }
 
     public void RemoveMember(UserKey user) => Access.RemoveMember(user);
@@ -55,14 +55,15 @@ public class Project
         var granted = member?.Role switch
         {
             ProjectRole.Viewer => ProjectPermission.Read,
-
             ProjectRole.Editor => ProjectPermission.Read | ProjectPermission.Update,
-
             _ => ProjectPermission.None
         };
 
         return (granted & required) == required;
     }
+
+    public void ChangeMemberRole(UserKey user, ProjectRole role)
+        => Access.ChangeMemberRole(user, role);
 
     public static Project Restore(
         ProjectKey key,

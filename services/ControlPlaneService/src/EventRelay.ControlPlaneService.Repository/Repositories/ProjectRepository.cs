@@ -1,7 +1,9 @@
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
+using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project;
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,25 +11,28 @@ namespace EventRelay.ControlPlaneService.Repository.Repositories;
 
 public sealed class ProjectRepository(ControlPlaneDbContext dbContext) : IProjectRepository
 {
-    public async Task AddAsync(
-        Project project,
-        CancellationToken cancellationToken)
+    public async Task AddAsync(Project project, CancellationToken cancellationToken)
     {
         await dbContext.Projects.AddAsync(project.Adapt<ProjectRecord>(), cancellationToken);
     }
 
-    public async Task<Project?> GetByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken)
+    public async Task AddMemberAsync(ProjectKey key, ProjectMember member, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(member);
+        var record = member.Adapt<ProjectMemberRecord>();
+        record.ProjectId = key.Id;
+
+        await dbContext.Set<ProjectMemberRecord>().AddAsync(record, cancellationToken);
+    }
+
+    public async Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var record = await dbContext.Projects
             .AsNoTracking()
             .Include(x => x.Owner)
             .Include(x => x.Organization)
             .Include(x => x.Access).ThenInclude(x => x.Members).ThenInclude(x => x.User)
-            .SingleOrDefaultAsync(
-                x => x.Id == id,
-                cancellationToken);
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         return record?.Adapt<Project>();
     }

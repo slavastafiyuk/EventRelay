@@ -1,4 +1,5 @@
 using EventRelay.ControlPlaneService.Domain.Entities.User;
+using EventRelay.ControlPlaneService.Domain.Exceptions.Project;
 
 namespace EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 
@@ -8,7 +9,7 @@ public sealed class ProjectAccess
     public ProjectVisibility Visibility { get; private set; } = ProjectVisibility.Private;
     public IReadOnlyCollection<ProjectMember> Members => _members.AsReadOnly();
 
-    internal void AddMember(UserKey user, ProjectRole role)
+    internal ProjectMember AddMember(UserKey user, ProjectRole role)
     {
         ArgumentNullException.ThrowIfNull(user);
 
@@ -21,7 +22,22 @@ public sealed class ProjectAccess
         if (_members.Any(x => x.User.Equals(user)))
             throw new InvalidOperationException("User already belongs to this project.");
 
-        _members.Add(new ProjectMember(user, role));
+        var member = new ProjectMember(user, role);
+
+        _members.Add(member);
+
+        return member;
+    }
+
+    internal void ChangeMemberRole(UserKey user, ProjectRole role)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        var member = _members.SingleOrDefault(
+            x => x.User.Equals(user))
+            ?? throw new ProjectMemberConflictException("User is not a project member.");
+
+        member.ChangeRole(role);
     }
 
     internal void RemoveMember(UserKey user)
