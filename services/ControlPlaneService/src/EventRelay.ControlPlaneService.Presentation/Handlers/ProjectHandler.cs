@@ -1,4 +1,5 @@
 using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
+using EventRelay.ControlPlaneService.Application.Abstractions.Persistence;
 using EventRelay.ControlPlaneService.Application.Abstractions.Projects;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
@@ -16,6 +17,7 @@ public class ProjectHandler(
     IProjectService projectService,
     ICurrentUser currentUser) : IProjectHandler
 {
+    [Transactional]
     public async Task<ProjectKeyDTO> CreateAsync(ProjectCreateDTO dto, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -30,6 +32,7 @@ public class ProjectHandler(
         return result.Adapt<ProjectKeyDTO>();
     }
 
+    [Transactional]
     public async Task<ProjectDTO?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await projectService.GetByIdAsync(
@@ -41,6 +44,7 @@ public class ProjectHandler(
 
     #region Members Management
 
+    [Transactional]
     public Task ManageMemberAsync(Guid id, ProjectMemberActionDTO dto, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -57,6 +61,7 @@ public class ProjectHandler(
         };
     }
 
+    [Transactional]
     public Task ChangeVisibilityAsync(Guid id, ProjectVisibilityDTO visibility, CancellationToken cancellationToken)
     {
         return projectService.ChangeVisibilityAsync(id, (ProjectVisibility)visibility, cancellationToken);
