@@ -14,7 +14,14 @@ public sealed class ComposeAuthenticationTests(
     ComposeStackFixture fixture)
     : IClassFixture<ComposeStackFixture>
 {
-    private const string RedirectUri = "http://localhost:5000/scalar/oauth-test";
+    private const string RedirectUri =
+        "http://localhost:5000/scalar/oauth-test";
+
+    private sealed record OrganizationKey(
+        Guid Id,
+        string Name);
+
+    #region Tests
 
     [Fact]
     [Trait("Category", "ComposeE2E")]
@@ -23,17 +30,20 @@ public sealed class ComposeAuthenticationTests(
         using var response =
             await fixture.Gateway.GetAsync("/api/projects/ping");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.OK,
+            response.StatusCode);
 
         using var json = JsonDocument.Parse(
             await response.Content.ReadAsStringAsync());
 
         Assert.Equal(
             "ControlPlaneService",
-            json.RootElement.GetProperty("service").GetString());
+            json.RootElement
+                .GetProperty("service")
+                .GetString());
     }
 
-    // Test 2: Missing credentials must be rejected.
     [Fact]
     [Trait("Category", "ComposeE2E")]
     public async Task ProtectedEndpoint_WithoutJwt_Returns401()
@@ -46,7 +56,6 @@ public sealed class ComposeAuthenticationTests(
             response.StatusCode);
     }
 
-    // Test 3: The real service must reject an invalid JWT.
     [Fact]
     [Trait("Category", "ComposeE2E")]
     public async Task ProtectedEndpoint_InvalidJwt_Returns401()
@@ -68,55 +77,32 @@ public sealed class ComposeAuthenticationTests(
             response.StatusCode);
     }
 
-    // Test 4: Complete real authentication and API workflow.
     [Fact]
     [Trait("Category", "ComposeE2E")]
     public async Task RealKeycloakLogin_CanCreateAndReadProject()
     {
-        var token = await LoginWithPkceAsync(fixture.Username, fixture.Password);
+        var token = await LoginWithPkceAsync(
+            fixture.Username,
+            fixture.Password);
+
+        var organization = await CreateOrganizationAsync(token);
 
         var projectName = $"E2E-{Guid.NewGuid():N}";
 
-        using var createRequest = new HttpRequestMessage(
-            HttpMethod.Post,
-            "/api/projects")
-        {
-            Content = JsonContent.Create(new
-            {
-                Name = projectName,
-                Description = "Docker Compose authentication E2E test"
-            })
-        };
+        var projectId = await CreateProjectAsync(
+            token,
+            organization,
+            projectName,
+            "Docker Compose authentication E2E test");
 
-        createRequest.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
-
-        using var createResponse =
-            await fixture.Gateway.SendAsync(createRequest);
-
-        var createBody =
-            await createResponse.Content.ReadAsStringAsync();
-
-        Assert.True(
-            createResponse.StatusCode == HttpStatusCode.Created,
-            $"Expected 201, received " +
-            $"{(int)createResponse.StatusCode}: {createBody}");
-
-        using var createdJson = JsonDocument.Parse(createBody);
-
-        var createdId = createdJson.RootElement
-            .GetProperty("id")
-            .GetGuid();
-
-        Assert.NotEqual(Guid.Empty, createdId);
-
-        // Step 3: Retrieve the project using the same JWT.
         using var getRequest = new HttpRequestMessage(
             HttpMethod.Get,
-            $"/api/projects/{createdId}");
+            $"/api/projects/{projectId}");
 
         getRequest.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
+            new AuthenticationHeaderValue(
+                "Bearer",
+                token);
 
         using var getResponse =
             await fixture.Gateway.SendAsync(getRequest);
@@ -134,7 +120,7 @@ public sealed class ComposeAuthenticationTests(
         var project = projectJson.RootElement;
 
         Assert.Equal(
-            createdId,
+            projectId,
             project.GetProperty("key")
                 .GetProperty("id")
                 .GetGuid());
@@ -146,12 +132,10 @@ public sealed class ComposeAuthenticationTests(
                 .GetString());
     }
 
-
     [Fact]
     [Trait("Category", "ComposeE2E")]
     public async Task PrivateProject_OtherAuthenticatedUser_Returns403()
     {
-        // Arrange: authenticate two distinct Keycloak users.
         var ownerToken = await LoginWithPkceAsync(
             fixture.Username,
             fixture.Password);
@@ -160,7 +144,6 @@ public sealed class ComposeAuthenticationTests(
             fixture.SecondUsername,
             fixture.SecondPassword);
 
-        // Verify that Keycloak issued tokens for different identities.
         var tokenHandler = new JwtSecurityTokenHandler();
 
         var ownerSubject = tokenHandler
@@ -171,49 +154,27 @@ public sealed class ComposeAuthenticationTests(
             .ReadJwtToken(outsiderToken)
             .Subject;
 
-        Assert.False(string.IsNullOrWhiteSpace(ownerSubject));
-        Assert.False(string.IsNullOrWhiteSpace(outsiderSubject));
-        Assert.NotEqual(ownerSubject, outsiderSubject);
+        Assert.False(
+            string.IsNullOrWhiteSpace(ownerSubject));
 
-        // Create a new project owned by User A.
-        var projectName = $"Authz-{Guid.NewGuid():N}";
+        Assert.False(
+            string.IsNullOrWhiteSpace(outsiderSubject));
 
-        using var createRequest = new HttpRequestMessage(
-            HttpMethod.Post,
-            "/api/projects")
-        {
-            Content = JsonContent.Create(new
-            {
-                Name = projectName,
-                Description = "Cross-user authorization E2E test"
-            })
-        };
+        Assert.NotEqual(
+            ownerSubject,
+            outsiderSubject);
 
-        createRequest.Headers.Authorization =
-            new AuthenticationHeaderValue(
-                "Bearer",
-                ownerToken);
+        var organization =
+            await CreateOrganizationAsync(ownerToken);
 
-        using var createResponse =
-            await fixture.Gateway.SendAsync(createRequest);
+        var projectId = await CreateProjectAsync(
+            ownerToken,
+            organization,
+            $"Authz-{Guid.NewGuid():N}",
+            "Cross-user authorization E2E test");
 
-        var createBody =
-            await createResponse.Content.ReadAsStringAsync();
+        // The owner can access the project.
 
-        Assert.True(
-            createResponse.StatusCode == HttpStatusCode.Created,
-            $"Expected 201, received " +
-            $"{(int)createResponse.StatusCode}: {createBody}");
-
-        using var createdJson = JsonDocument.Parse(createBody);
-
-        var projectId = createdJson.RootElement
-            .GetProperty("id")
-            .GetGuid();
-
-        Assert.NotEqual(Guid.Empty, projectId);
-
-        // Act 1: the owner reads the project.
         using var ownerRequest = new HttpRequestMessage(
             HttpMethod.Get,
             $"/api/projects/{projectId}");
@@ -226,12 +187,12 @@ public sealed class ComposeAuthenticationTests(
         using var ownerResponse =
             await fixture.Gateway.SendAsync(ownerRequest);
 
-        // Assert: the owner is authorized.
         Assert.Equal(
             HttpStatusCode.OK,
             ownerResponse.StatusCode);
 
-        // Act 2: a different authenticated user reads it.
+        // An authenticated outsider cannot access it.
+
         using var outsiderRequest = new HttpRequestMessage(
             HttpMethod.Get,
             $"/api/projects/{projectId}");
@@ -244,25 +205,220 @@ public sealed class ComposeAuthenticationTests(
         using var outsiderResponse =
             await fixture.Gateway.SendAsync(outsiderRequest);
 
-        // Assert: a valid JWT is not sufficient for access.
         Assert.Equal(
             HttpStatusCode.Forbidden,
             outsiderResponse.StatusCode);
 
-        // Act 3: an anonymous caller reads the same project.
-        using var anonymousResponse = await fixture.Gateway.GetAsync(
-            $"/api/projects/{projectId}");
+        // Anonymous requests must be rejected.
 
-        // Assert: missing authentication is a different failure.
+        using var anonymousResponse =
+            await fixture.Gateway.GetAsync(
+                $"/api/projects/{projectId}");
+
         Assert.Equal(
             HttpStatusCode.Unauthorized,
             anonymousResponse.StatusCode);
     }
 
-
-    private async Task<string> LoginWithPkceAsync(string username, string password)
+    [Fact]
+    [Trait("Category", "ComposeE2E")]
+    public async Task Owner_CanIssueAndRevokeApiKey_ThroughGateway()
     {
-        // Generate PKCE verifier and SHA-256 challenge.
+        var token = await LoginWithPkceAsync(
+            fixture.Username,
+            fixture.Password);
+
+        var organization =
+            await CreateOrganizationAsync(token);
+
+        var projectId = await CreateProjectAsync(
+            token,
+            organization,
+            $"ApiKeys-{Guid.NewGuid():N}");
+
+        // Issue a project API key.
+
+        using var issueRequest = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/projects/{projectId}/api-keys")
+        {
+            Content = JsonContent.Create(new
+            {
+                Name = "Gateway E2E key"
+            })
+        };
+
+        issueRequest.Headers.Authorization =
+            new AuthenticationHeaderValue(
+                "Bearer",
+                token);
+
+        using var issued =
+            await fixture.Gateway.SendAsync(issueRequest);
+
+        Assert.Equal(
+            HttpStatusCode.Created,
+            issued.StatusCode);
+
+        using var keyJson = JsonDocument.Parse(
+            await issued.Content.ReadAsStringAsync());
+
+        var keyId = keyJson.RootElement
+            .GetProperty("api")
+            .GetProperty("key")
+            .GetProperty("id")
+            .GetGuid();
+
+        var secret = keyJson.RootElement
+            .GetProperty("secret")
+            .GetString();
+
+        Assert.StartsWith("er_", secret);
+
+        // Revoke the API key through the same Gateway.
+
+        using var revokeRequest = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/projects/{projectId}/api-keys/{keyId}");
+
+        revokeRequest.Headers.Authorization =
+            new AuthenticationHeaderValue(
+                "Bearer",
+                token);
+
+        using var revoked =
+            await fixture.Gateway.SendAsync(revokeRequest);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            revoked.StatusCode);
+    }
+
+    #endregion Tests
+
+    #region Organization and Project Helpers
+
+    private async Task<OrganizationKey> CreateOrganizationAsync(
+        string token)
+    {
+        var organizationName =
+            $"Organization-{Guid.NewGuid():N}";
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "/api/organizations")
+        {
+            Content = JsonContent.Create(new
+            {
+                Name = organizationName
+            })
+        };
+
+        request.Headers.Authorization =
+            new AuthenticationHeaderValue(
+                "Bearer",
+                token);
+
+        using var response =
+            await fixture.Gateway.SendAsync(request);
+
+        var body =
+            await response.Content.ReadAsStringAsync();
+
+        Assert.True(
+            response.StatusCode == HttpStatusCode.Created,
+            $"Expected organization creation to return 201, " +
+            $"received {(int)response.StatusCode}: {body}");
+
+        using var json = JsonDocument.Parse(body);
+
+        var organizationId = json.RootElement
+            .GetProperty("id")
+            .GetGuid();
+
+        var returnedName = json.RootElement
+            .GetProperty("name")
+            .GetString();
+
+        Assert.NotEqual(
+            Guid.Empty,
+            organizationId);
+
+        Assert.Equal(
+            organizationName,
+            returnedName);
+
+        return new OrganizationKey(
+            organizationId,
+            returnedName!);
+    }
+
+    private async Task<Guid> CreateProjectAsync(
+        string token,
+        OrganizationKey organization,
+        string name,
+        string? description = null)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "/api/projects")
+        {
+            Content = JsonContent.Create(new
+            {
+                Name = name,
+                Description = description,
+
+                Organization = new
+                {
+                    organization.Id,
+                    organization.Name
+                }
+            })
+        };
+
+        request.Headers.Authorization =
+            new AuthenticationHeaderValue(
+                "Bearer",
+                token);
+
+        using var response =
+            await fixture.Gateway.SendAsync(request);
+
+        var body =
+            await response.Content.ReadAsStringAsync();
+
+        Assert.True(
+            response.StatusCode == HttpStatusCode.Created,
+            $"Expected project creation to return 201, " +
+            $"received {(int)response.StatusCode}: {body}");
+
+        using var json = JsonDocument.Parse(body);
+
+        var projectId = json.RootElement
+            .GetProperty("id")
+            .GetGuid();
+
+        Assert.NotEqual(
+            Guid.Empty,
+            projectId);
+
+        Assert.Equal(
+            name,
+            json.RootElement
+                .GetProperty("name")
+                .GetString());
+
+        return projectId;
+    }
+
+    #endregion Organization and Project Helpers
+
+    #region Authentication Helpers
+
+    private async Task<string> LoginWithPkceAsync(
+        string username,
+        string password)
+    {
         var verifier = Base64Url(
             RandomNumberGenerator.GetBytes(32));
 
@@ -289,8 +445,8 @@ public sealed class ComposeAuthenticationTests(
                 ["state"] = state
             });
 
-        // Log in through the real Keycloak browser UI.
-        using var playwright = await Playwright.CreateAsync();
+        using var playwright =
+            await Playwright.CreateAsync();
 
         await using var browser =
             await playwright.Chromium.LaunchAsync(
@@ -302,10 +458,13 @@ public sealed class ComposeAuthenticationTests(
         var page = await browser.NewPageAsync();
 
         await page.GotoAsync(authorizationUrl);
-        await page.Locator("#username").FillAsync(username);
-        await page.Locator("#password").FillAsync(password);
 
-        // Capture the authorization-code redirect.
+        await page.Locator("#username")
+            .FillAsync(username);
+
+        await page.Locator("#password")
+            .FillAsync(password);
+
         var redirectTask = page.WaitForRequestAsync(
             request =>
                 request.Url.StartsWith(
@@ -320,25 +479,28 @@ public sealed class ComposeAuthenticationTests(
         var query = QueryHelpers.ParseQuery(
             new Uri(redirectRequest.Url).Query);
 
-        Assert.Equal(state, query["state"].ToString());
+        Assert.Equal(
+            state,
+            query["state"].ToString());
 
         var code = query["code"].ToString();
 
-        Assert.False(string.IsNullOrWhiteSpace(code));
+        Assert.False(
+            string.IsNullOrWhiteSpace(code));
 
-        // Exchange the code using the original PKCE verifier.
-        using var tokenResponse = await fixture.Keycloak.PostAsync(
-            $"/realms/{ComposeStackFixture.Realm}" +
-            "/protocol/openid-connect/token",
-            new FormUrlEncodedContent(
-                new Dictionary<string, string>
-                {
-                    ["grant_type"] = "authorization_code",
-                    ["client_id"] = ComposeStackFixture.ClientId,
-                    ["code"] = code,
-                    ["redirect_uri"] = RedirectUri,
-                    ["code_verifier"] = verifier
-                }));
+        using var tokenResponse =
+            await fixture.Keycloak.PostAsync(
+                $"/realms/{ComposeStackFixture.Realm}" +
+                "/protocol/openid-connect/token",
+                new FormUrlEncodedContent(
+                    new Dictionary<string, string>
+                    {
+                        ["grant_type"] = "authorization_code",
+                        ["client_id"] = ComposeStackFixture.ClientId,
+                        ["code"] = code,
+                        ["redirect_uri"] = RedirectUri,
+                        ["code_verifier"] = verifier
+                    }));
 
         Assert.True(
             tokenResponse.IsSuccessStatusCode,
@@ -352,90 +514,11 @@ public sealed class ComposeAuthenticationTests(
             .GetProperty("access_token")
             .GetString();
 
-        Assert.False(string.IsNullOrWhiteSpace(token));
+        Assert.False(
+            string.IsNullOrWhiteSpace(token));
 
-        // Never write the access token to test logs.
         return token!;
     }
-
-
-    [Fact]
-    [Trait("Category", "ComposeE2E")]
-    public async Task Owner_CanIssueAndRevokeApiKey_ThroughGateway()
-    {
-        var token = await LoginWithPkceAsync(
-            fixture.Username,
-            fixture.Password);
-
-        // Create a project.
-        using var createRequest = new HttpRequestMessage(
-            HttpMethod.Post, "/api/projects")
-        {
-            Content = JsonContent.Create(new
-            {
-                Name = $"ApiKeys-{Guid.NewGuid():N}"
-            })
-        };
-
-        createRequest.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
-
-        using var created = await fixture.Gateway.SendAsync(createRequest);
-
-        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
-
-        using var projectJson = JsonDocument.Parse(
-            await created.Content.ReadAsStringAsync());
-
-        var projectId = projectJson.RootElement
-            .GetProperty("id").GetGuid();
-
-        // Issue a project API key.
-        using var issueRequest = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"/api/projects/{projectId}/api-keys")
-        {
-            Content = JsonContent.Create(new
-            {
-                Name = "Gateway E2E key"
-            })
-        };
-
-        issueRequest.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
-
-        using var issued = await fixture.Gateway.SendAsync(issueRequest);
-
-        Assert.Equal(HttpStatusCode.Created, issued.StatusCode);
-
-        using var keyJson = JsonDocument.Parse(
-            await issued.Content.ReadAsStringAsync());
-
-        var keyId = keyJson.RootElement
-            .GetProperty("api")
-            .GetProperty("key")
-            .GetProperty("id")
-            .GetGuid();
-
-        var secret = keyJson.RootElement
-            .GetProperty("secret")
-            .GetString();
-
-        Assert.StartsWith("er_", secret);
-
-        // Revoke the key through the same Gateway.
-        using var revokeRequest = new HttpRequestMessage(
-            HttpMethod.Delete,
-            $"/api/projects/{projectId}/api-keys/{keyId}");
-
-        revokeRequest.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
-
-        using var revoked = await fixture.Gateway.SendAsync(revokeRequest);
-
-        Assert.Equal(HttpStatusCode.NoContent, revoked.StatusCode);
-    }
-
 
     private static string Base64Url(byte[] bytes)
     {
@@ -444,4 +527,6 @@ public sealed class ComposeAuthenticationTests(
             .Replace('+', '-')
             .Replace('/', '_');
     }
+
+    #endregion Authentication Helpers
 }

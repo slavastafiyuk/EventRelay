@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectApiService, ProjectApiService>();
         services.AddScoped<IOrganizationService, OrganizationService>();
 
+
         return services;
     }
 }

@@ -52,4 +52,5 @@ public sealed class ControlPlaneServiceTests : IDisposable
         _client.Dispose();
         _factory.Dispose();
     }
+
 }

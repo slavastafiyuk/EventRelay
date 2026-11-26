@@ -35,13 +35,14 @@ public sealed class ProjectApiKeyIntegrationTests(
     {
         var user = $"owner-{Guid.NewGuid():N}";
 
+        var organization = await OrganizationTestHelper.CreateAsync(Client, user);
+
         using var response = await SendAsUserAsync(
-            HttpMethod.Post,
-            "/api/projects",
-            user,
+            HttpMethod.Post, "/api/projects", user,
             new ProjectCreateDTO
             {
-                Name = $"Project-{Guid.NewGuid():N}"
+                Name = $"Project-{Guid.NewGuid():N}",
+                Organization = organization
             });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);

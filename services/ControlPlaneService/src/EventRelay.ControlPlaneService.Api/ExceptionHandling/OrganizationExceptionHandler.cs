@@ -32,6 +32,9 @@ public sealed class OrganizationExceptionHandler : IExceptionHandler
             OrganizationRuleViolationException when isMemberAction =>
                 (StatusCodes.Status409Conflict, "Organization member operation conflict."),
 
+            OrganizationMemberOwnsProjectsException when isMemberAction =>
+                (StatusCodes.Status409Conflict, "Organization member owns projects."),
+
             ArgumentException when isMemberAction =>
                 (StatusCodes.Status400BadRequest, "Invalid organization member request."),
 

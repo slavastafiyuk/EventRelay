@@ -94,14 +94,19 @@ public sealed class Mapping : IRegister
         config.NewConfig<ProjectAccessRecord, ProjectAccess>()
             .MapWith(src => ToDomainAccess(src));
 
+
         config.NewConfig<Project, ProjectRecord>()
             .Map(dest => dest.Id, src => src.Key.Id)
             .Map(dest => dest.Name, src => src.Key.Name)
             .Map(dest => dest.Description, src => src.Description)
             .Map(dest => dest.CreatedAt, src => src.CreatedAt)
             .Map(dest => dest.OwnerId, src => src.Owner.Id)
+            .Map(dest => dest.OrganizationId,
+                 src => src.Organization == null ? (Guid?)null : src.Organization.Id)
             .Ignore(dest => dest.Owner)
+            .Ignore(dest => dest.Organization)
             .Map(dest => dest.Access, src => src.Access);
+
 
         config.NewConfig<ProjectRecord, Project>()
             .MapWith(src => ToDomain(src));
@@ -156,6 +161,7 @@ public sealed class Mapping : IRegister
                 .Select(m => m.Adapt<OrganizationMember>()));
     }
 
+
     private static Project ToDomain(ProjectRecord record)
     {
         return Project.Restore(
@@ -163,8 +169,10 @@ public sealed class Mapping : IRegister
             record.Owner.Adapt<UserKey>(),
             record.CreatedAt,
             record.Description,
-            record.Access.Adapt<ProjectAccess>());
+            record.Access.Adapt<ProjectAccess>(),
+            record.Organization.Adapt<OrganizationKey?>());
     }
+
 
     private static ProjectAccess ToDomainAccess(ProjectAccessRecord record)
     {

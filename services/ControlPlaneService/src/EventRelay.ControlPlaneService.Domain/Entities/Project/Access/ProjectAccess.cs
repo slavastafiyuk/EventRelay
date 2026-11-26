@@ -1,4 +1,5 @@
 using EventRelay.ControlPlaneService.Domain.Entities.User;
+using EventRelay.ControlPlaneService.Domain.Exceptions.Project;
 
 namespace EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 
@@ -8,33 +9,48 @@ public sealed class ProjectAccess
     public ProjectVisibility Visibility { get; private set; } = ProjectVisibility.Private;
     public IReadOnlyCollection<ProjectMember> Members => _members.AsReadOnly();
 
-    internal void AddMember(UserKey user, ProjectRole role)
+    internal ProjectMember AddMember(UserKey user, ProjectRole role)
     {
         ArgumentNullException.ThrowIfNull(user);
 
         if (Visibility != ProjectVisibility.Internal)
-            throw new InvalidOperationException("Only internal projects can have members.");
+            throw new ProjectMemberConflictException("Only internal projects can have members.");
 
         if (!Enum.IsDefined(role))
             throw new ArgumentOutOfRangeException(nameof(role));
 
         if (_members.Any(x => x.User.Equals(user)))
-            throw new InvalidOperationException("User already belongs to this project.");
+            throw new ProjectMemberConflictException("User already belongs to this project.");
 
-        _members.Add(new ProjectMember(user, role));
+        var member = new ProjectMember(user, role);
+
+        _members.Add(member);
+
+        return member;
+    }
+
+    internal ProjectMember ChangeMemberRole(UserKey user, ProjectRole role)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        var member = _members.SingleOrDefault(x => x.User.Equals(user))
+            ?? throw new ProjectMemberConflictException("User is not a project member.");
+        member.ChangeRole(role);
+
+        return member;
     }
 
     internal void RemoveMember(UserKey user)
     {
         var removed = _members.RemoveAll(x => x.User.Equals(user));
 
-        if (removed == 0) throw new InvalidOperationException("User is not a project member.");
+        if (removed == 0) throw new ProjectMemberConflictException("User is not a project member.");
     }
 
     internal void SetVisibility(ProjectVisibility visibility)
     {
         if (!Enum.IsDefined(visibility))
-            throw new InvalidOperationException("This visibility is not supported yet.");
+            throw new ArgumentOutOfRangeException(nameof(visibility));
 
         Visibility = visibility;
 

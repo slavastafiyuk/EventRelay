@@ -9,7 +9,8 @@ namespace EventRelay.ControlPlaneService.Api.Controllers.Public;
 
 [Route("api/organizations")]
 public sealed class OrganizationController(
-    IOrganizationHandler organizationHandler) : PublicControllerBase
+    IOrganizationHandler organizationHandler
+    ) : PublicControllerBase
 {
 
     [HttpPost]
@@ -25,7 +26,7 @@ public sealed class OrganizationController(
             cancellationToken);
 
         return CreatedAtAction(
-            nameof(GetById),
+            nameof(Load),
             new { id = organization.Id },
             organization);
     }
@@ -35,11 +36,11 @@ public sealed class OrganizationController(
     [ProducesResponseType(typeof(OrganizationDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<OrganizationDTO>> GetById(
+    public async Task<ActionResult<OrganizationDTO>> Load(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var organization = await organizationHandler.GetByIdAsync(
+        var organization = await organizationHandler.LoadAsync(
             id,
             cancellationToken);
 

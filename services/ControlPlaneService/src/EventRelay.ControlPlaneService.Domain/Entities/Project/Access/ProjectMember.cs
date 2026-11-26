@@ -15,4 +15,12 @@ public sealed class ProjectMember
         User = user;
         Role = role;
     }
+
+    internal void ChangeRole(ProjectRole role)
+    {
+        if (!Enum.IsDefined(role))
+            throw new ArgumentOutOfRangeException(nameof(role));
+
+        Role = role;
+    }
 }

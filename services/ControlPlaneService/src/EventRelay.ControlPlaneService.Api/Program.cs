@@ -5,6 +5,7 @@ using EventRelay.ControlPlaneService.Api.Configuration;
 using EventRelay.ControlPlaneService.Api.ExceptionHandling;
 using EventRelay.ControlPlaneService.Api.Middlware;
 using EventRelay.ControlPlaneService.Application;
+using EventRelay.ControlPlaneService.Application.Transactions;
 using EventRelay.ControlPlaneService.Infrastructure;
 using EventRelay.ControlPlaneService.Presentation;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
@@ -128,9 +129,16 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+#region Exception Handling
 
+builder.Services.AddExceptionHandler<TransactionExceptionHandler>();
 builder.Services.AddExceptionHandler<OrganizationExceptionHandler>();
+builder.Services.AddExceptionHandler<ProjectExceptionHandler>();
+
+#endregion Exception Handling
+
 builder.Services.AddProblemDetails();
+builder.Services.EnableTransactionalInterception();
 
 var app = builder.Build();
 

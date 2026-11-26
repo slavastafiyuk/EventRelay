@@ -7,8 +7,7 @@ namespace EventRelay.ControlPlaneService.Infrastructure.Persistence.Configuratio
 
 public sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectRecord>
 {
-    public void Configure(
-        EntityTypeBuilder<ProjectRecord> builder)
+    public void Configure(EntityTypeBuilder<ProjectRecord> builder)
     {
         builder.ToTable("projects");
         builder.HasKey(x => x.Id);
@@ -31,14 +30,27 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectRecor
             .HasColumnType("timestamp with time zone")
             .IsRequired();
 
+        builder.Property(x => x.OwnerId)
+            .HasColumnName("OwnerId")
+            .IsRequired();
+
         builder.HasOne(x => x.Owner)
             .WithMany()
             .HasForeignKey(x => x.OwnerId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
 
-        builder.HasIndex(x => x.Name)
-            .IsUnique();
+        builder.Property(x => x.OrganizationId)
+            .HasColumnName("OrganizationId");
+
+        builder.HasOne(x => x.Organization)
+            .WithMany()
+            .HasForeignKey(x => x.OrganizationId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        builder.HasIndex(x => x.OrganizationId);
+        builder.HasIndex(x => x.Name).IsUnique();
 
         builder.HasOne(x => x.Access)
             .WithOne()

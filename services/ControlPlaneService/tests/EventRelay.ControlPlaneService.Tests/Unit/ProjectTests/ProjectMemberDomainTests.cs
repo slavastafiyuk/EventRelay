@@ -2,6 +2,7 @@
 using EventRelay.ControlPlaneService.Domain.Entities.Project;
 using EventRelay.ControlPlaneService.Domain.Entities.Project.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
+using EventRelay.ControlPlaneService.Domain.Exceptions.Project;
 
 namespace EventRelay.ControlPlaneService.Tests.Unit.ProjectTests;
 
@@ -53,8 +54,7 @@ public sealed class ProjectMemberDomainTests
         var project = NewProject(NewUser());
         project.ChangeVisibility(visibility);
 
-        Assert.Throws<InvalidOperationException>(() =>
-            project.AddMember(NewUser(), ProjectRole.Viewer));
+        Assert.Throws<ProjectMemberConflictException>(() => project.AddMember(NewUser(), ProjectRole.Viewer));
 
         Assert.Empty(project.Access.Members);
     }
@@ -68,8 +68,7 @@ public sealed class ProjectMemberDomainTests
         project.ChangeVisibility(ProjectVisibility.Internal);
         project.AddMember(member, ProjectRole.Viewer);
 
-        Assert.Throws<InvalidOperationException>(() =>
-            project.AddMember(member, ProjectRole.Editor));
+        Assert.Throws<ProjectMemberConflictException>(() => project.AddMember(member, ProjectRole.Editor));
 
         Assert.Single(project.Access.Members);
 
@@ -86,8 +85,7 @@ public sealed class ProjectMemberDomainTests
 
         project.ChangeVisibility(ProjectVisibility.Internal);
 
-        Assert.Throws<InvalidOperationException>(() =>
-            project.AddMember(owner, ProjectRole.Editor));
+        Assert.Throws<ProjectMemberConflictException>(() => project.AddMember(owner, ProjectRole.Editor));
 
         Assert.Empty(project.Access.Members);
     }
@@ -111,8 +109,7 @@ public sealed class ProjectMemberDomainTests
         Assert.False(project.HasPermission(
             member, ProjectPermission.Update));
 
-        Assert.Throws<InvalidOperationException>(() =>
-            project.RemoveMember(member));
+        Assert.Throws<ProjectMemberConflictException>(() => project.RemoveMember(member));
     }
 
     [Theory]
@@ -130,5 +127,76 @@ public sealed class ProjectMemberDomainTests
 
         Assert.Equal(visibility, project.Access.Visibility);
         Assert.Empty(project.Access.Members);
+    }
+
+    [Theory]
+    [InlineData(ProjectRole.Viewer, ProjectRole.Editor, true)]
+    [InlineData(ProjectRole.Editor, ProjectRole.Viewer, false)]
+    public void ChangeMemberRole_UpdatesPermissions(ProjectRole initialRole, ProjectRole newRole, bool canUpdate)
+    {
+        var project = NewProject(NewUser());
+        var user = NewUser();
+
+        project.ChangeVisibility(ProjectVisibility.Internal);
+        project.AddMember(user, initialRole);
+
+        var member = project.ChangeMemberRole(user, newRole);
+
+        Assert.Equal(newRole, member.Role);
+        Assert.Equal(user, member.User);
+        Assert.Single(project.Access.Members);
+        Assert.Equal(newRole, project.Access.Members.Single().Role);
+        Assert.True(project.HasPermission(user, ProjectPermission.Read));
+        Assert.Equal(canUpdate, project.HasPermission(user, ProjectPermission.Update));
+        Assert.False(project.HasPermission(user, ProjectPermission.ManageMembers));
+    }
+
+    [Fact]
+    public void ChangeMemberRole_NonexistentMember_Throws()
+    {
+        var project = NewProject(NewUser());
+        project.ChangeVisibility(ProjectVisibility.Internal);
+
+        Assert.Throws<ProjectMemberConflictException>(() => project.ChangeMemberRole(NewUser(), ProjectRole.Editor));
+
+        Assert.Empty(project.Access.Members);
+    }
+
+    [Fact]
+    public void ChangeMemberRole_InvalidRole_Throws()
+    {
+        var project = NewProject(NewUser());
+        var user = NewUser();
+
+        project.ChangeVisibility(ProjectVisibility.Internal);
+        project.AddMember(user, ProjectRole.Viewer);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => project.ChangeMemberRole(user, (ProjectRole)999));
+        Assert.Equal(ProjectRole.Viewer, Assert.Single(project.Access.Members).Role);
+    }
+
+    [Fact]
+    public void AddMember_InvalidRole_Throws()
+    {
+        var project = NewProject(NewUser());
+
+        project.ChangeVisibility(ProjectVisibility.Internal);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => project.AddMember(NewUser(), (ProjectRole)999));
+        Assert.Empty(project.Access.Members);
+    }
+
+    [Fact]
+    public void ChangeVisibility_InvalidVisibility_Throws()
+    {
+        var project = NewProject(NewUser());
+        var user = NewUser();
+
+        project.ChangeVisibility(ProjectVisibility.Internal);
+        project.AddMember(user, ProjectRole.Viewer);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => project.ChangeVisibility((ProjectVisibility)999));
+        Assert.Equal(ProjectVisibility.Internal, project.Access.Visibility);
+        Assert.Single(project.Access.Members);
     }
 }

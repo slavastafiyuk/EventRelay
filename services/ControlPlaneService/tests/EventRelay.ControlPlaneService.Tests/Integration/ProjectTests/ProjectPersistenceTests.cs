@@ -138,6 +138,7 @@ public sealed class ProjectPersistenceTests(CreatePostgresContainer fixture)
             Assert.Equal(project.Key.Name, loaded.Key.Name);
             Assert.Equal(ProjectVisibility.Private, loaded.Access.Visibility);
             Assert.Empty(loaded.Access.Members);
+            Assert.Null(loaded.Organization);
         }
     }
 }

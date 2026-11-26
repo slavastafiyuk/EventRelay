@@ -1,4 +1,5 @@
 
+using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Organization;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.Project.Access;
 using EventRelay.ControlPlaneService.Infrastructure.Persistence.Models.User;
 
@@ -13,6 +14,9 @@ public sealed class ProjectRecord
 
     public Guid OwnerId { get; set; }
     public UserKeyRecord Owner { get; set; } = null!;
+
+    public Guid? OrganizationId { get; set; }
+    public OrganizationKeyRecord? Organization { get; set; }
 
     public ProjectAccessRecord Access { get; set; } = null!;
 }

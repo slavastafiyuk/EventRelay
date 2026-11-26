@@ -206,6 +206,11 @@ public sealed class OrganizationMemberRepositoryTests(
         // Act
         await using (var db = CreateDbContext())
         {
+            await using var transaction =
+                await db.Database.BeginTransactionAsync(
+                    System.Data.IsolationLevel.Serializable,
+                    Ct);
+
             var repository = new OrganizationRepository(db);
 
             await repository.RemoveMemberAsync(
@@ -213,7 +218,9 @@ public sealed class OrganizationMemberRepositoryTests(
                 seed.Member.Id,
                 Ct);
 
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(Ct);
+
+            await transaction.CommitAsync(Ct);
         }
 
         // Assert
@@ -266,7 +273,7 @@ public sealed class OrganizationMemberRepositoryTests(
             var repository = new OrganizationRepository(db);
 
             await repository.AddAsync(secondOrganization, Ct);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(Ct);
         }
 
         // Change role in the first organization.
@@ -280,7 +287,7 @@ public sealed class OrganizationMemberRepositoryTests(
                 OrganizationRole.Admin,
                 Ct);
 
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(Ct);
         }
 
         // Verify the second organization's role was not changed.
@@ -289,7 +296,7 @@ public sealed class OrganizationMemberRepositoryTests(
             var memberships = await db.Set<OrganizationMemberRecord>()
                 .AsNoTracking()
                 .Where(x => x.UserId == seed.Member.Id)
-                .ToListAsync();
+                .ToListAsync(Ct);
 
             Assert.Equal(2, memberships.Count);
 
@@ -309,6 +316,11 @@ public sealed class OrganizationMemberRepositoryTests(
         // Remove membership from only the first organization.
         await using (var db = CreateDbContext())
         {
+            await using var transaction =
+                await db.Database.BeginTransactionAsync(
+                    System.Data.IsolationLevel.Serializable,
+                    Ct);
+
             var repository = new OrganizationRepository(db);
 
             await repository.RemoveMemberAsync(
@@ -316,7 +328,9 @@ public sealed class OrganizationMemberRepositoryTests(
                 seed.Member.Id,
                 Ct);
 
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(Ct);
+
+            await transaction.CommitAsync(Ct);
         }
 
         // The second organization's membership must still exist.
@@ -325,7 +339,7 @@ public sealed class OrganizationMemberRepositoryTests(
             var remaining = await db.Set<OrganizationMemberRecord>()
                 .AsNoTracking()
                 .Where(x => x.UserId == seed.Member.Id)
-                .ToListAsync();
+                .ToListAsync(Ct);
 
             var membership = Assert.Single(remaining);
 
@@ -336,7 +350,6 @@ public sealed class OrganizationMemberRepositoryTests(
             Assert.Equal(OrganizationRole.Member, membership.Role);
         }
     }
-
     [Fact]
     public async Task AddMemberAsync_DuplicateMembership_ThrowsDatabaseException()
     {
@@ -423,8 +436,14 @@ public sealed class OrganizationMemberRepositoryTests(
             OrganizationRole.Admin,
             Ct);
 
+        // Request B removes the member and commits.
         await using (var secondDb = CreateDbContext())
         {
+            await using var transaction =
+                await secondDb.Database.BeginTransactionAsync(
+                    System.Data.IsolationLevel.Serializable,
+                    Ct);
+
             var secondRepository = new OrganizationRepository(secondDb);
 
             await secondRepository.RemoveMemberAsync(
@@ -432,9 +451,12 @@ public sealed class OrganizationMemberRepositoryTests(
                 seed.Member.Id,
                 Ct);
 
-            await secondDb.SaveChangesAsync();
+            await secondDb.SaveChangesAsync(Ct);
+
+            await transaction.CommitAsync(Ct);
         }
 
+        // Request A attempts to update the deleted membership.
         var unitOfWork = new EfUnitOfWork(
             firstDb,
             CreatePipeline());
@@ -446,7 +468,6 @@ public sealed class OrganizationMemberRepositoryTests(
         Assert.IsType<DbUpdateConcurrencyException>(
             exception.InnerException);
     }
-
 
     #region Helper Methods
 

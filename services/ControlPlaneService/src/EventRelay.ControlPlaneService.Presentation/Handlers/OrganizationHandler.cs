@@ -1,6 +1,7 @@
 
 using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Application.Abstractions.Organizations;
+using EventRelay.ControlPlaneService.Application.Abstractions.Persistence;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
 using EventRelay.ControlPlaneService.Presentation.Abstractions;
@@ -14,6 +15,7 @@ public sealed class OrganizationHandler(
     IOrganizationService organizationService,
     ICurrentUser currentUser) : IOrganizationHandler
 {
+    [Transactional]
     public async Task<OrganizationKeyDTO> CreateAsync(OrganizationCreateDTO dto, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(dto);
@@ -32,7 +34,8 @@ public sealed class OrganizationHandler(
         return result.Adapt<OrganizationKeyDTO>();
     }
 
-    public async Task<OrganizationDTO?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    [Transactional]
+    public async Task<OrganizationDTO?> LoadAsync(Guid id, CancellationToken cancellationToken)
     {
         var result = await organizationService.GetByIdAsync(
             id,
@@ -41,7 +44,7 @@ public sealed class OrganizationHandler(
         return result?.Adapt<OrganizationDTO>();
     }
 
-
+    [Transactional]
     public Task ManageMemberAsync(
         Guid organizationId,
         OrganizationMemberActionDTO dto,
@@ -84,5 +87,4 @@ public sealed class OrganizationHandler(
             _ => throw new ArgumentOutOfRangeException(nameof(dto), "Unsupported organization member action.")
         };
     }
-
 }
