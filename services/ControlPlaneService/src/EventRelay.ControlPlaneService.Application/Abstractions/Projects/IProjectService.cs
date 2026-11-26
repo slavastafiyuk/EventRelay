@@ -9,6 +9,7 @@ public interface IProjectService : IExistingKeyService<ProjectKey>
 {
     Task<ProjectKey> CreateAsync(Project project, CancellationToken cancellationToken);
     Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<Project?> GetAuthorizedAsync(Guid id, ProjectPermission permission, CancellationToken cancellationToken);
     Task AddMemberAsync(Guid id, UserKey user, ProjectRole role, CancellationToken cancellationToken);
     Task ChangeMemberRoleAsync(Guid id, UserKey user, ProjectRole role, CancellationToken cancellationToken);
     Task RemoveMemberAsync(Guid id, UserKey user, CancellationToken cancellationToken);
