@@ -3,6 +3,7 @@ using EventRelay.ControlPlaneService.Application.Abstractions.Authentication;
 using EventRelay.ControlPlaneService.Application.Abstractions.Organizations;
 using EventRelay.ControlPlaneService.Application.Abstractions.Persistence;
 using EventRelay.ControlPlaneService.Application.Abstractions.Users;
+using EventRelay.ControlPlaneService.Application.Exceptions.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization;
 using EventRelay.ControlPlaneService.Domain.Entities.Organization.Access;
 using EventRelay.ControlPlaneService.Domain.Entities.User;
@@ -15,19 +16,15 @@ public sealed class OrganizationService(
     IUserService userService,
     ICurrentUser currentUser) : IOrganizationService
 {
-    public async Task<OrganizationKey> CreateAsync(
-        Organization organization,
-        CancellationToken cancellationToken)
+    public async Task<OrganizationKey> CreateAsync(Organization organization, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(organization);
 
         var user = currentUser.UserKey
-            ?? throw new InvalidOperationException(
-                "Current user is not initialized.");
+            ?? throw new InvalidOperationException("Current user is not initialized.");
 
         if (!organization.IsOwner(user))
-            throw new InvalidOperationException(
-                "Organization owner must match the current user.");
+            throw new InvalidOperationException("Organization owner must match the current user.");
 
         await repository.AddAsync(organization, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -35,9 +32,7 @@ public sealed class OrganizationService(
         return organization.Key;
     }
 
-    public async Task<Organization?> GetByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken)
+    public async Task<Organization?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var user = currentUser.UserKey
             ?? throw new InvalidOperationException(
@@ -113,28 +108,23 @@ public sealed class OrganizationService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task RemoveMemberAsync(
-        Guid organizationId,
-        Guid userId,
-        CancellationToken cancellationToken)
+    public async Task RemoveMemberAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken)
     {
-        var organization = await GetOwnerManageableOrganizationAsync(
-            organizationId, cancellationToken);
+        var organization = await GetOwnerManageableOrganizationAsync(organizationId, cancellationToken);
 
-        var user = await GetExistingUserAsync(
-            userId, cancellationToken);
+        var user = await GetExistingUserAsync(userId, cancellationToken);
 
         if (!organization.IsMember(user))
-            throw new KeyNotFoundException(
-                "User is not a member of the organization.");
+            throw new KeyNotFoundException("User is not a member of the organization.");
 
         organization.RemoveMember(user);
 
-        await repository.RemoveMemberAsync(
-            organizationId,
-            user.Id,
-            cancellationToken);
+        var ownsProjects = await repository.HasOwnedProjectsAsync(organizationId, user.Id, cancellationToken);
 
+        if (ownsProjects)
+            throw new OrganizationMemberOwnsProjectsException("The member cannot be removed because they own one or more projects in this organization.");
+
+        await repository.RemoveMemberAsync(organizationId, user.Id, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 

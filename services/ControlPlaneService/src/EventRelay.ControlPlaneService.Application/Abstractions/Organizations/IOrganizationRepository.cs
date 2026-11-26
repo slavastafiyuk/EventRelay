@@ -11,4 +11,5 @@ public interface IOrganizationRepository : IExistingKeyRepository<OrganizationKe
     Task AddMemberAsync(Guid organizationId, OrganizationMember member, CancellationToken cancellationToken);
     Task ChangeMemberRoleAsync(Guid organizationId, Guid userId, OrganizationRole role, CancellationToken cancellationToken);
     Task RemoveMemberAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken);
+    Task<bool> HasOwnedProjectsAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken);
 }
